@@ -27,3 +27,12 @@ The following modules are used:
 * RL Coach
 * Tensorflow
 
+## Model
+
+We will try several models:
+* SageMaker DeepAR
+* Keras LSTM
+* PyTorch LSTM
+* MXNet LSTM
+
+

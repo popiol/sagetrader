@@ -18,7 +18,6 @@ for file in files[:400]:
     quotes = quotes1 if quotes is None else pd.concat([quotes, quotes1])
 
 quotes2 = quotes.rename(columns={"quote_dt": "start"}).drop(columns=["low_price", "high_price", "row_id"])
-#grouped = quotes2.groupby(["comp_code","start"]).min().reset_index()
 grouped = quotes2.groupby("comp_code")
 start = grouped["start"].min()
 target = grouped["price"].agg(lambda x: x.tolist())
