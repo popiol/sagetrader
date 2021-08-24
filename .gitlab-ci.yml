@@ -1,0 +1,42 @@
+stages:
+  - deploy
+  - test
+  - clean
+
+deploy_to_aws:
+  stage: deploy
+  environment:
+    name: $CI_COMMIT_BRANCH
+    on_stop: clean
+  script:
+    - chmod 750 get_vars.sh
+    - ./get_vars.sh
+    - terraform init
+    - terraform apply -var-file=config.tfvars -auto-approve
+    - terraform output -json > tfout.json
+
+test:
+  stage: test
+  script:
+    - chmod 750 get_vars.sh
+    - ./get_vars.sh
+    - pip3 install -r requirements.txt
+    #- python3 -m pytest test/test_hist_simulator.py
+
+clean:
+  stage: clean
+  environment:
+    name: $CI_COMMIT_BRANCH
+    action: stop
+  variables:
+    GIT_STRATEGY: none
+  when: manual
+  except:
+    - master
+    - $CI_DEFAULT_BRANCH
+  script:
+    - git clone $CI_REPOSITORY_URL temprepo
+    - cd temprepo
+    - ./get_vars.sh
+    - terraform init
+    - terraform destroy -var-file=config.tfvars -auto-approve

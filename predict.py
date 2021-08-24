@@ -37,10 +37,9 @@ predictor = sagemaker.predictor.Predictor(
 outputs = predictor.predict({"instances": recs})
 bucket.put_object(Key="output/train.jsonl.out", Body=outputs)
 
-predictor.delete_endpoint()
-
-sm = boto3.client("sagemaker")
-models = sm.list_models()["Models"]
-for model in models:
-    sm.delete_model(model["ModelName"])
+#predictor.delete_endpoint()
+#sm = boto3.client("sagemaker")
+#models = sm.list_models()["Models"]
+#for model in models:
+#    sm.delete_model(model["ModelName"])
 

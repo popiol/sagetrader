@@ -6,11 +6,12 @@ s3 = boto3.resource("s3")
 sess = sagemaker.Session()
 bucket_name2 = sess.default_bucket()
 bucket2 = s3.Bucket(bucket_name2)
-role = sagemaker.get_execution_role()
+role = "arn:aws:iam::278088188282:role/service-role/AmazonSageMaker-ExecutionRole-20210714T012499"
 region = sess.boto_region_name
 bucket_name = "popiol.daytrader-master-quotes"
 bucket = s3.Bucket(bucket_name)
 files = [x.key for x in bucket.objects.filter(Prefix="csv_clean/date=202105")]
+print(files[:5])
 quotes = None
 
 for file in files[:400]:
@@ -22,7 +23,7 @@ grouped = quotes2.groupby("comp_code")
 start = grouped["start"].min()
 target = grouped["price"].agg(lambda x: x.tolist())
 train = pd.DataFrame({"start": start, "target": target})
-train.head()
+print(train.head())
 
 train_file_key = "train.jsonl"
 train_file = f"s3://{bucket_name2}/{train_file_key}"
@@ -42,7 +43,7 @@ estimator = sagemaker.estimator.Estimator(
     output_path=f"s3://{bucket_name2}/model",
 )
 
- hyperparameters = {
+hyperparameters = {
     "time_freq": "H",
     "context_length": "20",
     "prediction_length": "10",
@@ -50,5 +51,8 @@ estimator = sagemaker.estimator.Estimator(
 }
 estimator.set_hyperparameters(**hyperparameters)
 
+print("Fitting...")
+
 estimator.fit(train_file)
 
+print("Model created")
