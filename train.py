@@ -1,6 +1,7 @@
 import sagemaker
 import boto3
 import pandas as pd
+import os
 
 s3 = boto3.resource("s3")
 sess = sagemaker.Session()
@@ -30,6 +31,15 @@ train_file = f"s3://{bucket_name2}/{train_file_key}"
 with open("tmp.jsonl", "w") as f:
     train.to_json(f, orient='records', lines=True)
 bucket2.upload_file("tmp.jsonl", Key=train_file_key)
+os.remove("tmp.jsonl")
+train_file_key = "train.parquet"
+train_file = f"s3://{bucket_name2}/{train_file_key}"
+with open("tmp.parquet", "bw") as f:
+    train.to_parquet(f)
+bucket2.upload_file("tmp.parquet", Key=train_file_key)
+os.remove("tmp.parquet")
+
+exit()
 
 deepar_img = sagemaker.image_uris.retrieve("forecasting-deepar", region)
 

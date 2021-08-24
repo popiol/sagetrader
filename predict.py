@@ -1,6 +1,7 @@
 import sagemaker
 import boto3
 import pandas as pd
+import json
 
 s3 = boto3.resource("s3")
 sess = sagemaker.Session()
@@ -13,7 +14,6 @@ region = sess.boto_region_name
 
 deepar_img = sagemaker.image_uris.retrieve("forecasting-deepar", region)
 
-import json
 data = bucket.download_file("train.jsonl", "tmp.jsonl")
 recs = []
 with open("tmp.jsonl", "r") as f:

@@ -17,11 +17,6 @@ variable "bucket_arn" {
     default = ""
 }
 
-variable "bucket_prefix" {
-	type = string
-    default = "data/"
-}
-
 variable "http_url" {
 	type = string
     default = ""
@@ -31,10 +26,10 @@ variable "http_url" {
 
 resource "aws_kinesis_firehose_delivery_stream" "main" {
 	name = "${var.inp.app_id}_${var.name}"
-	destination = "http_endpoint"
+	destination = (var.http_url == "" ? "extended_s3" : "http_endpoint")
 
     dynamic "s3_configuration" {
-        for_each = toset(var.bucket_arn == "" ? [] : [var.bucket_arn])
+        for_each = toset(var.http_url == "" ? [] : [var.bucket_arn])
 
         content {
             role_arn = var.role_arn
@@ -42,7 +37,20 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
             buffer_size = 10
             buffer_interval = 600
             compression_format = "GZIP"
-            prefix = var.bucket_prefix
+            prefix = var.name
+        }
+    }
+
+    dynamic "extended_s3_configuration" {
+        for_each = toset(var.http_url == "" ? [var.bucket_arn] : [])
+
+        content {
+            role_arn = var.role_arn
+            bucket_arn = var.bucket_arn
+            buffer_size = 10
+            buffer_interval = 600
+            compression_format = "GZIP"
+            prefix = var.name
         }
     }
 
@@ -57,6 +65,7 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
             request_configuration {
                 content_encoding = "GZIP"
             }
+            s3_backup_mode = "AllData"
         }
 	}
 }
