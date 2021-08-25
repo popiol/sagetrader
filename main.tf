@@ -45,7 +45,7 @@ module "firehose_role" {
 # output
 
 output "main_bucket" {
-  value = module.main_bucket.bucket_name
+  value = module.main_bucket.name
 }
 
 
