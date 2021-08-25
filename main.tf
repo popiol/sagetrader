@@ -34,15 +34,6 @@ module "firehose_role" {
 	inp = var.inp
 }
 
-module "hist_stream" {
-	source = "./terraform/firehose"
-	name = "hist_stream"
-    role_arn = module.firehose_role.arn
-	service = "firehose"
-	attached_policies = ["AmazonKinesisFirehoseFullAccess", "AmazonS3FullAccess"]
-	inp = var.inp
-}
-
 # output
 
 output "main_bucket" {

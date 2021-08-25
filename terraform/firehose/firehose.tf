@@ -17,7 +17,7 @@ variable "bucket_arn" {
     default = ""
 }
 
-variable "http_url" {
+variable "api_url" {
 	type = string
     default = ""
 }
@@ -58,7 +58,7 @@ resource "aws_kinesis_firehose_delivery_stream" "main" {
         for_each = toset(var.http_url == "" ? [] : [var.http_url])
         
         content {
-            url = var.http_url
+            url = var.api_url
             buffering_size = 1
             buffering_interval = 60
             role_arn = var.role_arn

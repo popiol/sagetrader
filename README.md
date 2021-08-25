@@ -12,12 +12,9 @@ Examples of the API usage:
 
 https://github.com/lynxbroker/API-examples/tree/master/Python
 
-The historical data will be stored in an S3 bucket.
-
-The current data will be put in a Kinesis stream and sent to two target directions: 
-* S3 bucket
-* Sagemaker Inference API
-
+The data is stored in an S3 bucket.
+After each data pull, the prediction runs on the most current data,
+generating a decision about placing, cancelling or changing the buy/sell orders.
 
 ## Reinforcement learning
 
@@ -35,4 +32,7 @@ We will try several models:
 * PyTorch LSTM
 * MXNet LSTM
 
+The input of the model is consisted of the quotes of all the considered companies.
+For each company, a given number of the last quotes are provided, along with timestamps.
 
+The output of the model contains the confidence for each company to buy it, the buy price and the sell price.
