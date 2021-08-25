@@ -2,6 +2,10 @@
 
 export APP_VER=`echo "$CI_COMMIT_BRANCH" | tr '[:upper:]' '[:lower:]'`
 
+if [ -z "$APP_VER" ]; then
+    export APP_VER=`git branch --show-current`
+fi
+
 if [[ "$APP_VER" == "master" || "$APP_VER" == "$CI_DEFAULT_BRANCH" ]]; then
 	export TEMP_DEPLOY="false"
 else
