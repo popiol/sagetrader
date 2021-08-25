@@ -10,6 +10,7 @@ variable "inp" {
 
 variable "archived_paths" {
     type = list(string)
+    default = []
 }
 
 # definition
