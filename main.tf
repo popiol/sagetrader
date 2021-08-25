@@ -34,14 +34,6 @@ module "sagemaker_role" {
 	inp = var.inp
 }
 
-module "firehose_role" {
-	source = "./terraform/role"
-	role_name = "firehose"
-	service = "firehose"
-	attached_policies = ["AmazonKinesisFirehoseFullAccess", "AmazonS3FullAccess"]
-	inp = var.inp
-}
-
 # output
 
 output "main_bucket" {
