@@ -23,5 +23,3 @@ predictor = sagemaker.predictor.Predictor(
 
 outputs = predictor.predict({"instances": recs})
 bucket.put_object(Key="output/train.jsonl.out", Body=outputs)
-
-# predictor.delete_endpoint()

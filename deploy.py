@@ -15,14 +15,6 @@ predictor = sagemaker.predictor.Predictor(
     endpoint_name=endpoint_name, serializer=sagemaker.serializers.JSONSerializer()
 )
 
-sm = boto3.client("sagemaker")
-models = sm.list_models()["Models"]
-for model in models:
-    print(model.ModelName)
-    # sm.delete_model(model["ModelName"])
-
-exit()
-
 model = sagemaker.model.Model(
     image_uri=deepar_img,
     model_data="s3://sagemaker-us-east-2-278088188282/model/deepar-2021-07-16-19-47-44-405/output/model.tar.gz",
@@ -30,15 +22,30 @@ model = sagemaker.model.Model(
 )
 
 try:
-    model.deploy(
-        initial_instance_count=1,
-        instance_type="ml.m5.large",
-        endpoint_name=endpoint_name,
-    )
-except ClientError:
     predictor = sagemaker.predictor.Predictor(
         endpoint_name=endpoint_name, serializer=sagemaker.serializers.JSONSerializer()
     )
-    predictor.update_endpoint(
-        initial_instance_count=1, instance_type="ml.m5.large", model_name=model.name
-    )
+    predictor.delete_endpoint()
+except:    
+    pass
+
+model.deploy(
+    initial_instance_count=1,
+    instance_type="ml.m5.large",
+    endpoint_name=endpoint_name,
+)
+
+sm = boto3.client("sagemaker")
+models = sm.list_models()["Models"]
+configs = sm.list_endpoint_configs()["EndpointConfigs"]
+used_models = []
+for config in configs:
+    config = sm.describe_endpoint_config(EndpointConfigName=config["EndpointConfigName"])
+    for variant in config["ProductionVariants"]:
+        used_models.append(variant["ModelName"])
+for model in models:
+    model_name = model["ModelName"]
+    if model_name not in used_models:
+        print("deleting", model_name)
+        sm.delete_model(ModelName=model_name)
+
