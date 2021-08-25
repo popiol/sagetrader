@@ -1,0 +1,9 @@
+config.tfvars
+__pycache__/
+venv/
+.vscode
+*.egg-info/
+*.egg
+nosetests.xml
+eggs/
+tmp.jsonl

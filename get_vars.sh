@@ -8,11 +8,8 @@ else
 	export TEMP_DEPLOY="true"
 fi
 
-envsubst < config.tfvars > config.tfvars.new
-mv config.tfvars.new config.tfvars
-
-envsubst < main.tf > main.tf.new
-mv main.tf.new main.tf
+envsubst < config.tfvars.templ > config.tfvars
+envsubst < main.tf.templ > main.tf
 
 #cd terraform/lambda
 #dirs=`ls -d1 */ | sed "s/\/$//" | tr '\n' ' '`

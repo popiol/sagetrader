@@ -19,7 +19,9 @@ for file in files[:400]:
     quotes1 = pd.read_csv(bucket.Object(file).get()["Body"])
     quotes = quotes1 if quotes is None else pd.concat([quotes, quotes1])
 
-quotes2 = quotes.rename(columns={"quote_dt": "start"}).drop(columns=["low_price", "high_price", "row_id"])
+quotes2 = quotes.rename(columns={"quote_dt": "start"}).drop(
+    columns=["low_price", "high_price", "row_id"]
+)
 grouped = quotes2.groupby("comp_code")
 start = grouped["start"].min()
 target = grouped["price"].agg(lambda x: x.tolist())
@@ -29,15 +31,15 @@ print(train.head())
 train_file_key = "train.jsonl"
 train_file = f"s3://{bucket_name2}/{train_file_key}"
 with open("tmp.jsonl", "w") as f:
-    train.to_json(f, orient='records', lines=True)
+    train.to_json(f, orient="records", lines=True)
 bucket2.upload_file("tmp.jsonl", Key=train_file_key)
 os.remove("tmp.jsonl")
-#train_file_key = "train.parquet"
-#train_file = f"s3://{bucket_name2}/{train_file_key}"
-#with open("tmp.parquet", "bw") as f:
+# train_file_key = "train.parquet"
+# train_file = f"s3://{bucket_name2}/{train_file_key}"
+# with open("tmp.parquet", "bw") as f:
 #    train.to_parquet(f)
-#bucket2.upload_file("tmp.parquet", Key=train_file_key)
-#os.remove("tmp.parquet")
+# bucket2.upload_file("tmp.parquet", Key=train_file_key)
+# os.remove("tmp.parquet")
 
 deepar_img = sagemaker.image_uris.retrieve("forecasting-deepar", region)
 
