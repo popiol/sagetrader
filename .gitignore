@@ -9,4 +9,4 @@ tmp.jsonl
 tfout.json
 config.tfvars
 main.tf
-.terraform
+.terraform*
