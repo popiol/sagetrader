@@ -18,7 +18,7 @@ variable "archived_paths" {
 resource "aws_s3_bucket" "main" {
 	bucket = "${var.inp.aws_user}.${replace(var.inp.app_id,"_","-")}-${var.bucket_name}"
 	acl = "private"
-	tags = var.inp.app
+	tags = var.inp
 	force_destroy = var.inp.temporary
 
 	dynamic "lifecycle_rule" {
