@@ -1,3 +1,11 @@
+# inputs
+
+variable "inp" {
+	type = map(string)
+}
+
+# definition
+
 terraform {
 	backend "s3" {
 		bucket = "${STATEFILE_BUCKET}"
