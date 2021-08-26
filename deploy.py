@@ -26,7 +26,7 @@ try:
         endpoint_name=endpoint_name, serializer=sagemaker.serializers.JSONSerializer()
     )
     predictor.delete_endpoint()
-except:    
+except:
     pass
 
 model.deploy(
@@ -40,7 +40,9 @@ models = sm.list_models()["Models"]
 configs = sm.list_endpoint_configs()["EndpointConfigs"]
 used_models = []
 for config in configs:
-    config = sm.describe_endpoint_config(EndpointConfigName=config["EndpointConfigName"])
+    config = sm.describe_endpoint_config(
+        EndpointConfigName=config["EndpointConfigName"]
+    )
     for variant in config["ProductionVariants"]:
         used_models.append(variant["ModelName"])
 for model in models:
@@ -48,4 +50,3 @@ for model in models:
     if model_name not in used_models:
         print("deleting", model_name)
         sm.delete_model(ModelName=model_name)
-

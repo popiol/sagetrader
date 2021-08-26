@@ -36,21 +36,15 @@ bucket2.upload_file("tmp.jsonl", Key=train_file_key)
 os.remove("tmp.jsonl")
 
 estimator = sagemaker.rl.RLEstimator(
-    entry_point="rl_train_coach.py",
-    toolkit=sagemaker.rl.RLToolkit.COACH,
-    framework=RLFramework.MXNET,
+    entry_point="rl_train_ray.py",
+    toolkit=sagemaker.rl.RLToolkit.RAY,
+    framework=sagemaker.rl.RLFramework.TENSORFLOW,
     role=role,
     instance_type="ml.m5.large",
     instance_count=1,
     output_path=f"s3://{bucket_name2}/model",
-    base_job_name="deepar",
-    hyperparameters={
-        "RLCOACH_PRESET": "preset-cartpole-clippedppo",
-        "rl.agent_params.algorithm.discount": 0.9,
-        "rl.evaluation_steps:EnvironmentEpisodes": 1,
-        "improve_steps": 10,
-        "save_model": 1,
-    },
+    base_job_name="rltest",
+    hyperparameters={},
 )
 
 print("Fitting...")
