@@ -24,15 +24,10 @@ The following modules are used:
 * RL Coach
 * Tensorflow
 
-## Model
+For finding the optimal policy we use the Soft Actor-Critic method.
 
-We will try several models:
-* SageMaker DeepAR
-* Keras LSTM
-* PyTorch LSTM
-* MXNet LSTM
+The state of the environment is defined by the sequences of quotes for each company.
 
-The input of the model is consisted of the quotes of all the considered companies.
-For each company, a given number of the last quotes are provided, along with timestamps.
-
-The output of the model contains the confidence for each company to buy it, the buy price and the sell price.
+The action is defined as the confidence for each company to bring profit, 
+the buy price for each company in case we want to buy it, 
+and the sell price for each company that is currently in the portfolio.
