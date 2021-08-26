@@ -1,39 +1,47 @@
 import gym
 import ray
 from ray.rllib.agents import sac
+import tensorflow_probability as tfp
 
 
 class StocksSimulator(gym.Env):
-    def __init__(self, env_config):
+    def __init__(self, config):
         self.action_space = gym.spaces.Box(0.0, 1.0, (1,))
         self.observation_space = gym.spaces.Box(0.0, 1.0, (1,))
+        self.max_steps = config.get("max_steps", 100)
+        self.state = None
+        self.steps = None
 
     def reset(self):
-        return obs
+        self.state = self.observation_space.sample()
+        self.steps = 0
+        return self.state
 
     def step(self, action):
-        return obs, reward, done, info
+        self.steps += 1
+        r = action[0]
+        d = self.steps >= self.max_steps
+        self.state = self.observation_space.sample()
+        return self.state, r, d, {}
 
 
 ray.init()
-config = sac.DEFAULT_CONFIG.copy()
-config["Q_model"] = sac.DEFAULT_CONFIG["Q_model"].copy()
-config["num_workers"] = 0  # Run locally.
-config["twin_q"] = True
-config["clip_actions"] = False
-config["normalize_actions"] = True
-config["learning_starts"] = 0
-config["prioritized_replay"] = True
-config["rollout_fragment_length"] = 10
-config["train_batch_size"] = 10
-config["buffer_size"] = 40000
-num_iterations = 1
-trainer = ppo.PPOTrainer(
-    env=StocksSimulator,
-    config={
-        "env_config": {},
-    },
-)
 
-while True:
-    print(trainer.train())
+config = {
+    **sac.DEFAULT_CONFIG,
+    "Q_model": sac.DEFAULT_CONFIG["Q_model"].copy(),
+    "num_workers": 0,  # Run locally.
+    "twin_q": True,
+    "clip_actions": False,
+    "normalize_actions": True,
+    "learning_starts": 0,
+    "prioritized_replay": True,
+    "rollout_fragment_length": 10,
+    "train_batch_size": 10,
+    "buffer_size": 40000,
+    "framework": "tfe",
+}
+trainer = sac.SACTrainer(config=config, env=StocksSimulator)
+
+print(trainer.train())
+trainer.stop()

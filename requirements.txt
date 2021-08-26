@@ -1,2 +1,5 @@
 sagemaker
 pyarrow
+tensorflow
+tensorflow_probability
+ray[rllib]
