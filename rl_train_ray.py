@@ -19,7 +19,7 @@ class StocksSimulator(gym.Env):
 
     def step(self, action):
         self.steps += 1
-        r = action[0]
+        r = action[0] - self.state[0]
         d = self.steps >= self.max_steps
         self.state = self.observation_space.sample()
         return self.state, r, d, {}
@@ -29,8 +29,7 @@ ray.init()
 
 config = {
     **sac.DEFAULT_CONFIG,
-    "Q_model": sac.DEFAULT_CONFIG["Q_model"].copy(),
-    "num_workers": 0,  # Run locally.
+    "num_workers": 0,
     "twin_q": True,
     "clip_actions": False,
     "normalize_actions": True,
@@ -43,5 +42,8 @@ config = {
 }
 trainer = sac.SACTrainer(config=config, env=StocksSimulator)
 
-print(trainer.train())
+for _ in range(10):
+    info = trainer.train()
+    print(info["info"]["learner"]["default_policy"]["learner_stats"]["mean_td_error"])
+
 trainer.stop()
