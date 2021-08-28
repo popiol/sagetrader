@@ -3,26 +3,23 @@ import ray
 from ray.rllib.agents import sac, ppo
 from custom_agent import CustomAgent
 import time
-from gym.envs.classic_control import CartPoleEnv, Continuous_MountainCarEnv
-from ray.rllib.examples.env.windy_maze_env import WindyMazeEnv
 import numpy as np
+import random
+import math
 
-        
-class MountainCarEnv(Continuous_MountainCarEnv):
-    def __init__(self, config):
-        Continuous_MountainCarEnv.__init__(self)
-        self.max_steps = config.get("max_steps", 100)
-
-class CartPoleEnvWrapper(CartPoleEnv):
-    def __init__(self, config):
-        CartPoleEnv.__init__(self)
-        self.max_steps = config.get("max_steps", 100)
 
 class StocksSimulator(gym.Env):
     def __init__(self, config):
-        self.action_space = gym.spaces.Box(-1.0, 1.0, (1,))
-        self.observation_space = gym.spaces.Box(-1.0, 1.0, (1,))
         self.max_steps = config.get("max_steps", 100)
+        self.n_comps = config.get("n_comps", 500)
+        self.max_quotes = config.get("max_quotes", 25)
+        
+        # action space: for each company: buy confidence, buy price, sell price
+        self.action_space = [gym.spaces.Box(0.0, 1.0, (self.n_comps, 3))]
+        
+        # observation space: for each company: bid/ask offers, recent quotes
+        self.observation_space = gym.spaces.Box(-10.0, 10.0, (self.n_comps, self.max_quotes))
+        
         self.state = None
         self.steps = None
 
@@ -31,15 +28,50 @@ class StocksSimulator(gym.Env):
         self.steps = 0
         return self.state
 
-    def step(self, action):
-        if np.shape(action) == (1,):
-            action = action[0]
-        self.steps += 1
-        r = 1-abs(action - pow(self.state[0],2))
-        d = self.steps >= self.max_steps
-        self.state = self.observation_space.sample()
-        return self.state, r, d, {}
+    def _step(self, action):
+        return None, None
 
+    def step(self, action):
+        self.steps += 1
+        reward, self.state = self._step(action)
+        done = self.steps >= self.max_steps
+        return self.state, reward, done, {}
+
+
+class StocksHistSimulator(StocksSimulator):
+    def __init__(self, config):
+        StocksSimulator.__init__(self, config)
+        data_size = 671
+        self.max_steps = min(self.max_steps, data_size-200)
+        start = random.randint(50, data_size-self.max_steps)
+        self.file = open("data/all_hist.csv", "r")
+        self.prices = {}
+        for _ in range(start):
+            self.next_data()
+            
+    def next_data(self):
+        timestamp = self.file.readline().strip()
+        companies = self.file.readline().strip().split(",")
+        prices = self.file.readline().strip().split(",")
+        for company, price in zip(companies, prices):
+            if company not in self.prices:
+                self.prices[company] = [price]
+            else:
+                self.prices[company].append(price)
+
+    def _step(self, action):
+        reward = None
+        state = None
+        self.next_data()
+        for company in self.prices:
+            prices = self.prices[company]
+            compressed = []
+            for group_i in range(math.ceil(self.max_quotes/5)):
+                
+
+        if self.steps >= self.max_steps:
+            self.file.close()
+        return reward, state
 
 ray.init()
 
