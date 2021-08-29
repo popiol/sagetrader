@@ -23,15 +23,19 @@ class CustomAgent:
                 action = action[0]
             action = round(action)
             action = max(0, action)
-            action = min(self.env.action_space.n-1, action)
+            action = min(self.env.action_space.n - 1, action)
         return action
 
     def transform_x(self, state):
-        return state if np.isscalar(state) else [y for x in state for y in np.array(x).flatten()]
+        return (
+            state
+            if np.isscalar(state)
+            else [y for x in state for y in np.array(x).flatten()]
+        )
 
     def transform_y(self, action):
         return action[0] if np.shape(action) == (1,) else action
-    
+
     def train_episode(self):
         prev_state = self.env.reset()
         train_x = []
@@ -65,11 +69,14 @@ class CustomAgent:
         if self.max_total is None or total > self.max_total:
             self.max_total = total
         if train_x:
-            nit = max(1, round(1 * (r - self.avg_total + 1) / (abs(self.avg_total) + 1) - 1000))
+            nit = max(
+                1,
+                round(1 * (r - self.avg_total + 1) / (abs(self.avg_total) + 1) - 1000),
+            )
             for _ in range(nit):
                 self.model.fit(train_x, train_y)
             self.fitted = True
-        self.explore = max(.3, self.explore * .9999)
+        self.explore = max(0.3, self.explore * 0.9999)
 
     def train(self):
         self.niter = 0
@@ -78,7 +85,16 @@ class CustomAgent:
             self.train_episode()
             if self.niter > 100000:
                 break
-        print("avg r:", self.avg_reward, ", avg total:", self.avg_total, "max:", self.max_total, "explore:", self.explore)
+        print(
+            "avg r:",
+            self.avg_reward,
+            ", avg total:",
+            self.avg_total,
+            "max:",
+            self.max_total,
+            "explore:",
+            self.explore,
+        )
 
     def evaluate(self):
         prev_state = self.env.reset()

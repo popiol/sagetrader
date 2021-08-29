@@ -4,6 +4,7 @@ from custom_agent import CustomAgent
 import numpy as np
 import random
 import math
+import datetime
 
 
 class StocksSimulator(gym.Env):
@@ -13,15 +14,15 @@ class StocksSimulator(gym.Env):
         self.max_quotes = config.get("max_quotes", 25)
 
         # action space: for each company: buy confidence, buy price, sell price
-        self.action_space = [gym.spaces.Box(0.0, 1.0, (self.n_comps, 3))]
+        self.action_space = gym.spaces.Box(0.0, 1.0, (self.n_comps, 3))
 
         # observation space: for each company: bid/ask offers, recent quotes
         self.observation_space = gym.spaces.Box(
             -10.0, 10.0, (self.n_comps, self.max_quotes)
         )
 
-        self.state = None
-        self.steps = None
+        self.state = []
+        self.steps = 0
 
         self.prices = {}
         self.timestamps = {}
@@ -29,7 +30,7 @@ class StocksSimulator(gym.Env):
         self.orders = {}
         self.cash_init = 5000.0
         self.cash = self.cash_init
-        self.provision = .001
+        self.provision = 0.001
         self.min_transaction_value = 1000.0
 
     def place_order(self, company: str, n_shares: int, buy: bool, limit: float):
@@ -42,13 +43,13 @@ class StocksSimulator(gym.Env):
         self.orders[company] = {"n_shares": n_shares, "buy": buy, "limit": limit}
 
     def handle_orders(self):
+        orders = {}
         for company, order in self.orders.items():
             price = self.prices[company][-1]
             timestamp = self.timestamps[company][-1]
             if "timestamp" not in order:
                 order["timestamp"] = timestamp
             elif order["timestamp"].split()[0] < timestamp.split()[0]:
-                del self.orders[company]
                 break
             complete = False
             if order["buy"] and order["limit"] > price:
@@ -62,7 +63,9 @@ class StocksSimulator(gym.Env):
                 }
                 val = order["n_shares"] * order["limit"]
                 self.cash -= val * (1 if order["buy"] else -1) + self.provision * val
-                del self.orders[company]
+            else:
+                orders[company] = order
+        self.orders = orders
 
     def _reset(self):
         return []
@@ -76,10 +79,10 @@ class StocksSimulator(gym.Env):
         return []
 
     def relative_price_decode(self, x):
-        return math.pow(x-.5, 3)
+        return math.pow(x - 0.5, 3)
 
     def relative_price_encode(self, x):
-        return math.pow(abs(x), 1/3) * math.copysign(1, x) + .5
+        return math.pow(abs(x), 1 / 3) * math.copysign(1, x) + 0.5
 
     def get_capital(self):
         capital = self.cash
@@ -123,6 +126,7 @@ class StocksSimulator(gym.Env):
             self.place_order(best_comp, n_shares, True, buy_price)
         for company, item in self.portfolio.items():
             n_shares = item["n_shares"]
+            best_comp_i = list(self.prices).index(company)
             sell_price = self.relative_price_decode(action[best_comp_i][2])
             self.place_order(company, n_shares, False, sell_price)
         done = self.steps >= self.max_steps
@@ -133,12 +137,15 @@ class StocksSimulator(gym.Env):
 class StocksHistSimulator(StocksSimulator):
     def __init__(self, config):
         StocksSimulator.__init__(self, config)
+        self.timestamp_format = "%Y-%m-%d %H:%M:%S"
         self.data_size = 0
         self.filename = "data/all_hist.csv"
         with open(self.filename, "r") as f:
             for _ in f:
                 self.data_size += 1
+        self.data_size = self.data_size // 3
         self.max_steps = min(self.max_steps, self.data_size - 200)
+        self._reset()
 
     def _reset(self):
         start = random.randint(50, self.data_size - self.max_steps)
@@ -149,9 +156,12 @@ class StocksHistSimulator(StocksSimulator):
 
     def next_data(self):
         timestamp = self.file.readline().strip()
+        timestamp = datetime.datetime.strptime(timestamp, self.timestamp_format)
+        timestamp = timestamp.strftime(self.timestamp_format)
         companies = self.file.readline().strip().split(",")
         prices = self.file.readline().strip().split(",")
         for company, price in zip(companies, prices):
+            price = float(price)
             if company not in self.prices:
                 self.prices[company] = [price]
                 self.timestamps[company] = [timestamp]
@@ -180,7 +190,9 @@ class StocksHistSimulator(StocksSimulator):
             compressed = [0] * (self.max_quotes - len(compressed)) + compressed
             state.append(compressed)
 
-        state = state + [[0] * self.max_quotes] * (self.n_comps - len(state))
+        state = state[: self.n_comps] + [[0] * self.max_quotes] * (
+            self.n_comps - len(state)
+        )
 
         if self.steps >= self.max_steps:
             self.file.close()
