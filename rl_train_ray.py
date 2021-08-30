@@ -4,6 +4,13 @@ from custom_agent import CustomAgent
 import time
 import numpy as np
 from simulator import StocksHistSimulator
+from gym.envs.classic_control import CartPoleEnv
+
+
+class CartPoleEnvWrapper(CartPoleEnv):
+    def __init__(self, config):
+        CartPoleEnv.__init__(self)
+        self.max_steps = config.get("max_steps", 100)
 
 
 ray.init()
@@ -34,7 +41,8 @@ timestamp1 = time.time()
 
 for _ in range(100):
     info = agent.train()
-    score = agent.evaluate()["evaluation"]["episode_reward_min"]
+    eval = agent.evaluate()
+    score = eval["evaluation"]["episode_reward_min"]
     print(score)
     if score > 70:
         break
