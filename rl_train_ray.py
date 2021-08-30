@@ -5,6 +5,7 @@ import time
 import numpy as np
 from simulator import StocksHistSimulator
 from gym.envs.classic_control import CartPoleEnv
+from ray.rllib.examples.env.windy_maze_env import WindyMazeEnv
 
 
 class CartPoleEnvWrapper(CartPoleEnv):
@@ -44,7 +45,7 @@ for _ in range(100):
     eval = agent.evaluate()
     score = eval["evaluation"]["episode_reward_min"]
     print(score)
-    if score > 70:
+    if score > 10:
         break
 
 timestamp2 = time.time()

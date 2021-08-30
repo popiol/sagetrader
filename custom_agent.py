@@ -17,7 +17,7 @@ class CustomAgent:
         self.fitted = False
 
     def predict_action(self, x):
-        action = self.model.predict(x)
+        action = self.model.predict(x)[0]
         if type(self.env.action_space) == Discrete:
             if np.shape(action) == (1,):
                 action = action[0]
