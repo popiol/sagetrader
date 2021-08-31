@@ -10,3 +10,4 @@ tfout.json
 config.tfvars
 main.tf
 .terraform*
+data/*

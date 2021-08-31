@@ -6,6 +6,7 @@ import numpy as np
 from simulator import StocksHistSimulator
 from gym.envs.classic_control import CartPoleEnv
 from ray.rllib.examples.env.windy_maze_env import WindyMazeEnv
+import glob
 
 
 class CartPoleEnvWrapper(CartPoleEnv):
@@ -30,7 +31,7 @@ ppo_config = {
 
 # agent = sac.SACTrainer(config=config, env=StocksHistSimulator)
 # agent = ppo.PPOTrainer(config=ppo_config, env=StocksHistSimulator)
-agent = CustomAgent(env=StocksHistSimulator)
+agent = CustomAgent(env=StocksHistSimulator, env_config={"max_steps":10000})
 # agent = sac.SACTrainer(config=config, env=CartPoleEnvWrapper)
 # agent = ppo.PPOTrainer(config=ppo_config, env=CartPoleEnvWrapper)
 # agent = CustomAgent(env=CartPoleEnvWrapper)
@@ -39,6 +40,12 @@ agent = CustomAgent(env=StocksHistSimulator)
 # agent = CustomAgent(env=WindyMazeEnv)
 
 timestamp1 = time.time()
+files = glob.glob("data/model*")
+if files:
+    filename = max(files)
+    print("model:", filename)
+    if filename:
+        agent.load_checkpoint(filename)
 
 for _ in range(100):
     info = agent.train()

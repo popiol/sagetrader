@@ -1,23 +1,52 @@
-from numpy.core.numeric import isscalar
 from sklearn.neural_network import MLPRegressor
 import gym
 import random
 import numpy as np
 from gym.spaces.discrete import Discrete
+import tensorflow.keras as keras
+from ray.rllib.agents import Trainer
+import datetime
+import pickle
+import os
 
 
-class CustomAgent:
-    def __init__(self, env: gym.Env):
-        self.env = env({})
-        self.model = MLPRegressor(warm_start=True)
+class CustomAgent(Trainer):
+    def __init__(self, env: gym.Env, config: dict = {}, env_config: dict = {}):
+        self.env = env(env_config)
+        self.max_steps = self.env.max_steps
+        self.max_quotes = self.env.max_quotes
+        # self.model = MLPRegressor(warm_start=True)
+        self.model = self.create_lstm()
         self.avg_reward = 0
         self.avg_total = 0
         self.max_total = None
         self.explore = 1
         self.fitted = False
+        self.best_score = None
+        self.model_dir = "data"
+
+    def create_lstm(self):
+        inputs = keras.layers.Input(shape=(self.max_quotes,))
+        l = inputs
+        l = keras.layers.Reshape((self.max_quotes, 1))(l)
+        l = keras.layers.LSTM(self.max_quotes)(l)
+        l = keras.layers.Dropout(.5)(l)
+        l = keras.layers.Dense(100, activation="relu")(l)
+        l = keras.layers.Dropout(.5)(l)
+        l = keras.layers.Dense(20, activation="relu")(l)
+        l = keras.layers.Dropout(.5)(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Dropout(.5)(l)
+        outputs = keras.layers.Dense(3, activation="sigmoid")(l)
+        model = keras.Model(inputs=inputs, outputs=outputs)
+        model.compile(
+            optimizer=keras.optimizers.Nadam(learning_rate=0.001),
+            loss="mean_squared_logarithmic_error",
+        )
+        return model
 
     def predict_action(self, x):
-        action = self.model.predict(x)[0]
+        action = self.model.predict(np.array(x))[0]
         if type(self.env.action_space) == Discrete:
             if np.shape(action) == (1,):
                 action = action[0]
@@ -36,37 +65,37 @@ class CustomAgent:
     def transform_y(self, action):
         return action[0] if np.shape(action) == (1,) else action
 
-    def train_episode(self):
-        prev_state = self.env.reset()
+    def run_episode(self, train=True):
+        state = self.env.reset()
         train_x = []
         train_y = []
         hist_x = []
         hist_y = []
         total = 0
-        for _ in range(1000):
+        for _ in range(self.max_steps + 1):
             self.niter += 1
-            x = self.transform_x(prev_state)
-            if random.random() < self.explore or not self.fitted:
+            x = self.transform_x(state)
+            if (train and random.random() < self.explore) or not self.fitted:
                 action = self.env.action_space.sample()
             else:
                 action = self.predict_action([x])
             state, r, d, info = self.env.step(action)
             total += r
-            y = self.transform_y(action)
-            if r > self.avg_reward + 1 * abs(self.avg_reward):
-                train_x.append(x)
-                train_y.append(y)
-            hist_x.append(x)
-            hist_y.append(y)
+            if train:
+                y = self.transform_y(action)
+                if r > self.avg_reward + 1 * abs(self.avg_reward):
+                    train_x.append(x)
+                    train_y.append(y)
+                hist_x.append(x)
+                hist_y.append(y)
             self.avg_reward = self.avg_reward * 0.99 + r * 0.01
             if d:
                 break
-            prev_state = state
-        if total > self.avg_total + 1 * abs(self.avg_total):
+        if train and total > self.avg_total + 1 * abs(self.avg_total):
             train_x.extend(hist_x)
             train_y.extend(hist_y)
         self.avg_total = self.avg_total * 0.9 + total * 0.1
-        if self.max_total is None or total > self.max_total:
+        if self.max_total is None or total >= self.max_total:
             self.max_total = total
         if train_x:
             nit = max(
@@ -74,15 +103,16 @@ class CustomAgent:
                 round(1 * (r - self.avg_total + 1) / (abs(self.avg_total) + 1) - 1000),
             )
             for _ in range(nit):
-                self.model.fit(train_x, train_y)
+                self.model.fit(np.array(train_x), np.array(train_y), verbose=0)
             self.fitted = True
-        self.explore = max(0.3, self.explore * 0.9999)
+            self.explore = max(0.3, self.explore * 0.9999)
+        return total
 
     def train(self):
         self.niter = 0
         self.max_total = None
         for _ in range(1000):
-            self.train_episode()
+            self.run_episode()
             if self.niter > 100000:
                 break
         print(
@@ -97,20 +127,33 @@ class CustomAgent:
         )
 
     def evaluate(self):
-        prev_state = self.env.reset()
-        total = 0
-        for _ in range(1000):
-            if self.fitted:
-                x = self.transform_x(prev_state)
-                action = self.predict_action([x])
-            else:
-                action = self.env.action_space.sample()
-            state, r, d, info = self.env.step(action)
-            total += r
-            if d:
-                break
-            prev_state = state
+        total = self.run_episode(train=False)
+        if self.best_score is None or total > self.best_score:
+            self.best_score = total
+            self.save_checkpoint(self.model_dir)
         return {"evaluation": {"episode_reward_min": total}}
 
     def stop(self):
         pass
+
+    def __getstate__(self) -> dict:
+        keras.models.save_model(self.model, f"{self.model_dir}/keras_model")
+        return {
+            #"model": self.model,
+            "best_score": self.best_score,
+            "explore": self.explore,
+            "fitted": self.fitted,
+        }
+
+    def __setstate__(self, state: dict):
+        #self.model = state["model"]
+        self.model = keras.models.load_model(f"{self.model_dir}/keras_model")
+        self.best_score = state["best_score"]
+        self.explore = state["explore"]
+        self.fitted = state["fitted"]
+
+    def save_checkpoint(self, checkpoint_dir: str) -> str:
+        dt = datetime.datetime.today().strftime("%Y%m%d%H%M%S")
+        checkpoint_path = os.path.join(checkpoint_dir, f"model-{dt}.dat")
+        pickle.dump(self.__getstate__(), open(checkpoint_path, "wb"))
+        return checkpoint_path

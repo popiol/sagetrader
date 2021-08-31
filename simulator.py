@@ -3,15 +3,14 @@ import numpy as np
 import random
 import math
 import datetime
-from ray.rllib.env.multi_agent_env import MultiAgentEnv, make_multi_agent
-from gym.spaces import Box, Discrete, Tuple
+from gym.spaces import Box
 
 
 class StocksSimulator(gym.Env):
-    def __init__(self, config, max_steps, n_comps, max_quotes):
-        self.max_steps = max_steps
-        self.n_comps = n_comps
-        self.max_quotes = max_quotes
+    def __init__(self, config):
+        self.max_steps = config["max_steps"]
+        self.n_comps = config["n_comps"]
+        self.max_quotes = config["max_quotes"]
 
         # action space: for each company: buy confidence, buy price, sell price
         self.action_space = Box(0.0, 1.0, (3,))
@@ -106,10 +105,10 @@ class StocksSimulator(gym.Env):
         self.steps += 1
         if self.steps >= self.max_steps:
             self.done = True
+        company = self.company
         self.state = self.next_state()
         self.handle_orders()
-        company = self.company
-        confidence = action[0]
+        confidence = action[0] - action[1]
         rel_buy_price = self.relative_price_decode(action[1])
         rel_sell_price = self.relative_price_decode(action[2])
 
@@ -135,13 +134,15 @@ class StocksSimulator(gym.Env):
             self.place_order(company, n_shares, False, rel_sell_price)
 
         capital = self.get_capital()
+        if self.done:
+            print("capital:", capital, ", reward:", self.total_reward)
         reward = capital / self.cash_init - 1
         self.total_reward += reward
-        return self.state, reward, self.done, {"capital": capital}
+        return self.state, reward, self.done, {"capital": capital, "company": self.company}
 
 
 class StocksHistSimulator(StocksSimulator):
-    def __init__(self, config, **kwargs):
+    def __init__(self, config):
         self.timestamp_format = "%Y-%m-%d %H:%M:%S"
         self.data_size = 0
         self.filename = "data/all_hist.csv"
@@ -150,28 +151,30 @@ class StocksHistSimulator(StocksSimulator):
                 self.data_size += 1
         self.data_size = self.data_size // 3
         self.prices_it = None
-        self.max_steps = kwargs.get("max_steps", 50000)
-        self.n_comps = kwargs.get("n_comps", 500)
-        self.max_quotes = kwargs.get("max_quotes", 25)
+        self.max_steps = config.get("max_steps", 50000)
+        self.n_comps = config.get("n_comps", 500)
+        self.max_quotes = config.get("max_quotes", 10)
         self.max_steps = math.floor(
             min(self.max_steps / self.n_comps, self.data_size - 200) * self.n_comps
         )
-        kwargs["max_steps"] = self.max_steps
+        config["max_steps"] = self.max_steps
+        config["n_comps"] = self.n_comps
+        config["max_quotes"] = self.max_quotes
         StocksSimulator.__init__(
             self,
-            config,
-            max_steps=self.max_steps,
-            n_comps=self.n_comps,
-            max_quotes=self.max_quotes,
+            config
         )
 
     def _reset(self):
         self.start = random.randint(
             50, self.data_size - self.max_steps // self.n_comps - 1
         )
+        self.lines_processed = 0
         self.file = open(self.filename, "r")
         for _ in range(self.start * self.n_comps):
             self.next_data()
+            if self.lines_processed >= self.start:
+                break
         self.buffered_state = None
         self.buffered_company = None
         self.next_state()
@@ -204,6 +207,7 @@ class StocksHistSimulator(StocksSimulator):
             prices2 = {x: self.prices[x] for x in comps}
             self.prices_it = iter(prices2.items())
             company, prices = next(self.prices_it)
+            self.lines_processed += 1
         return company, prices
 
     def next_state(self):
@@ -221,7 +225,7 @@ class StocksHistSimulator(StocksSimulator):
         for price_i in range(self.max_quotes + 1):
             if start >= len(prices):
                 break
-            end = start + pow(2, price_i // 5)
+            end = start + pow(2, price_i)
             state.append(np.mean(prices[-end : len(prices) - start]))
             start = end
         for price_i, price in enumerate(state[:-1]):
