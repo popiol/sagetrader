@@ -24,7 +24,7 @@ The following modules are used:
 * Ray RLlib
 * Tensorflow
 
-For finding the optimal policy we use the Soft Actor-Critic method.
+For finding the optimal policy we use an actor-critic method.
 
 The state of the environment is defined by the sequences of quotes for each company.
 

@@ -15,8 +15,7 @@ class CustomAgent(Trainer):
         self.env = env(env_config)
         self.max_steps = self.env.max_steps
         self.max_quotes = self.env.max_quotes
-        # self.model = MLPRegressor(warm_start=True)
-        self.model = self.create_lstm()
+        self.model = self.create_model()
         self.avg_reward = 0
         self.avg_total = 0
         self.max_total = None
@@ -25,7 +24,7 @@ class CustomAgent(Trainer):
         self.best_score = None
         self.model_dir = "data"
 
-    def create_lstm(self):
+    def create_model(self):
         inputs = keras.layers.Input(shape=(self.max_quotes,))
         l = inputs
         l = keras.layers.Reshape((self.max_quotes, 1))(l)
@@ -33,7 +32,9 @@ class CustomAgent(Trainer):
         l = keras.layers.Dropout(.5)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
         l = keras.layers.Dropout(.5)(l)
-        l = keras.layers.Dense(20, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Dropout(.5)(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dropout(.5)(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dropout(.5)(l)
@@ -83,7 +84,7 @@ class CustomAgent(Trainer):
             total += r
             if train:
                 y = self.transform_y(action)
-                if r > self.avg_reward + 1 * abs(self.avg_reward):
+                if r > self.avg_reward + 3 * abs(self.avg_reward):
                     train_x.append(x)
                     train_y.append(y)
                 hist_x.append(x)
@@ -91,19 +92,20 @@ class CustomAgent(Trainer):
             self.avg_reward = self.avg_reward * 0.99 + r * 0.01
             if d:
                 break
-        if train and total > self.avg_total + 1 * abs(self.avg_total):
+        if train and total > self.avg_total + 3 * abs(self.avg_total):
             train_x.extend(hist_x)
             train_y.extend(hist_y)
         self.avg_total = self.avg_total * 0.9 + total * 0.1
         if self.max_total is None or total >= self.max_total:
             self.max_total = total
         if train_x:
+            print("Fit")
             nit = max(
                 1,
                 round(1 * (r - self.avg_total + 1) / (abs(self.avg_total) + 1) - 1000),
             )
             for _ in range(nit):
-                self.model.fit(np.array(train_x), np.array(train_y), verbose=0)
+                self.model.fit(np.array(train_x), np.array(train_y), epochs=10, verbose=0)
             self.fitted = True
             self.explore = max(0.3, self.explore * 0.9999)
         return total
@@ -128,7 +130,7 @@ class CustomAgent(Trainer):
 
     def evaluate(self):
         total = self.run_episode(train=False)
-        if self.best_score is None or total > self.best_score:
+        if self.best_score is None or total >= self.best_score:
             self.best_score = total
             self.save_checkpoint(self.model_dir)
         return {"evaluation": {"episode_reward_min": total}}
@@ -137,7 +139,8 @@ class CustomAgent(Trainer):
         pass
 
     def __getstate__(self) -> dict:
-        keras.models.save_model(self.model, f"{self.model_dir}/keras_model")
+        dt = datetime.datetime.today().strftime("%Y%m%d%H%M%S")
+        keras.models.save_model(self.model, f"{self.model_dir}/model.tf")
         return {
             #"model": self.model,
             "best_score": self.best_score,
@@ -147,13 +150,15 @@ class CustomAgent(Trainer):
 
     def __setstate__(self, state: dict):
         #self.model = state["model"]
-        self.model = keras.models.load_model(f"{self.model_dir}/keras_model")
+        self.model = keras.models.load_model(f"{self.model_dir}/model.tf")
         self.best_score = state["best_score"]
         self.explore = state["explore"]
         self.fitted = state["fitted"]
 
-    def save_checkpoint(self, checkpoint_dir: str) -> str:
+    def save_checkpoint(self, checkpoint_dir: str = None) -> str:
+        if checkpoint_dir is None:
+            checkpoint_dir = self.model_dir
         dt = datetime.datetime.today().strftime("%Y%m%d%H%M%S")
-        checkpoint_path = os.path.join(checkpoint_dir, f"model-{dt}.dat")
+        checkpoint_path = f"{checkpoint_dir}/agent.dat"
         pickle.dump(self.__getstate__(), open(checkpoint_path, "wb"))
         return checkpoint_path

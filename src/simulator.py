@@ -239,4 +239,4 @@ class StocksHistSimulator(StocksSimulator):
         self.buffered_state = state
         self.buffered_company = company
 
-        return np.array(return_state, dtype=np.float32)
+        return return_state
