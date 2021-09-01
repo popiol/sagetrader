@@ -1,13 +1,10 @@
-from sklearn.neural_network import MLPRegressor
 import gym
 import random
 import numpy as np
 from gym.spaces.discrete import Discrete
 import tensorflow.keras as keras
 from ray.rllib.agents import Trainer
-import datetime
 import pickle
-import os
 
 
 class CustomAgent(Trainer):
@@ -74,6 +71,8 @@ class CustomAgent(Trainer):
         hist_y = []
         total = 0
         for _ in range(self.max_steps + 1):
+            if self.fitted:
+                print(self.max_steps + 1 - _)
             self.niter += 1
             x = self.transform_x(state)
             if (train and random.random() < self.explore) or not self.fitted:
@@ -139,18 +138,15 @@ class CustomAgent(Trainer):
         pass
 
     def __getstate__(self) -> dict:
-        dt = datetime.datetime.today().strftime("%Y%m%d%H%M%S")
-        keras.models.save_model(self.model, f"{self.model_dir}/model.tf")
+        keras.models.save_model(self.model, f"{self.model_dir}/model.h5", save_format="h5")
         return {
-            #"model": self.model,
             "best_score": self.best_score,
             "explore": self.explore,
             "fitted": self.fitted,
         }
 
     def __setstate__(self, state: dict):
-        #self.model = state["model"]
-        self.model = keras.models.load_model(f"{self.model_dir}/model.tf")
+        self.model = keras.models.load_model(f"{self.model_dir}/model.h5", save_format="h5")
         self.best_score = state["best_score"]
         self.explore = state["explore"]
         self.fitted = state["fitted"]
@@ -158,7 +154,6 @@ class CustomAgent(Trainer):
     def save_checkpoint(self, checkpoint_dir: str = None) -> str:
         if checkpoint_dir is None:
             checkpoint_dir = self.model_dir
-        dt = datetime.datetime.today().strftime("%Y%m%d%H%M%S")
         checkpoint_path = f"{checkpoint_dir}/agent.dat"
         pickle.dump(self.__getstate__(), open(checkpoint_path, "wb"))
         return checkpoint_path
