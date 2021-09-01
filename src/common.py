@@ -4,7 +4,7 @@ import os
 
 
 s3 = boto3.resource("s3")
-sess = sagemaker.Session()
+sess = sagemaker.Session(boto3.session.Session())
 bucket_name = sess.default_bucket()
 bucket = s3.Bucket(bucket_name)
 region = sess.boto_region_name
