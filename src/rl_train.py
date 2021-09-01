@@ -29,6 +29,9 @@ estimator = RLEstimator(
     output_path=f"s3://{common.bucket_name}/output",
     base_job_name="rltest",
     hyperparameters={},
+    environment={
+        "AWS_DEFAULT_REGION": common.region
+    }
 )
 
 print("Fitting...")

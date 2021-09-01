@@ -11,10 +11,9 @@ def main():
     data_dir = "data"
     if not os.path.isdir(data_dir):
         os.mkdir(data_dir)
-    filename = f"{data_dir}/all_hist.csv"
-    if not os.path.isfile(filename):
-        print("Download data")
-        common.s3_download_file(filename)
+    common.s3_download_file("data/all_hist.csv", f"{data_dir}/all_hist.csv", if_not_exists=True)
+    common.s3_download_file("model/agent.dat", f"{data_dir}/agent.dat", if_not_exists=True)
+    common.s3_download_file("model/model.h5", f"{data_dir}/model.h5", if_not_exists=True)
 
     ray.init()
 
@@ -40,8 +39,8 @@ def main():
 
     agent.stop()
 
-    common.s3_upload_file("data/agent.dat", "model/agent.dat")
-    common.s3_upload_file("data/model.h5", "model/model.h5")
+    common.s3_upload_file(f"{data_dir}/agent.dat", "model/agent.dat")
+    common.s3_upload_file(f"{data_dir}/model.h5", "model/model.h5")
 
 if __name__ == "__main__":
     main()
