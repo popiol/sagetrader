@@ -24,14 +24,12 @@ estimator = RLEstimator(
     toolkit_version=RLEstimator.RAY_LATEST_VERSION,
     framework=sagemaker.rl.RLFramework.TENSORFLOW,
     role=role,
-    instance_type="ml.m5.xlarge", #"ml.m5.large",
+    instance_type="ml.m5.large",  # "ml.m5.xlarge",
     instance_count=1,
     output_path=f"s3://{common.bucket_name}/output",
     base_job_name="rltest",
     hyperparameters={},
-    environment={
-        "AWS_DEFAULT_REGION": common.region
-    }
+    environment={"AWS_DEFAULT_REGION": common.region},
 )
 
 print("Fitting...")
