@@ -21,8 +21,11 @@ def s3_download_file(obj_key, filename=None, if_not_exists=False, fail_on_missin
     if if_not_exists and os.path.isfile(filename):
         return
     try:
+        bucket.Object(obj_key).load()
         with open(filename, 'wb') as f:
             bucket.download_fileobj(obj_key, f)
     except ClientError:
         if fail_on_missing:
             raise
+    
+    

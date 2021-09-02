@@ -158,6 +158,6 @@ class CustomAgent(Trainer):
         pickle.dump(self.__getstate__(), open(checkpoint_path, "wb"))
         return checkpoint_path
 
-    def load_checkpoint(self, checkpoint_path):
+    def load_checkpoint(self, checkpoint_path: str):
         extra_data = pickle.load(open(checkpoint_path, "rb"))
         self.__setstate__(extra_data)
