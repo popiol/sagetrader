@@ -45,7 +45,7 @@ class CustomAgent(Trainer):
         return model
 
     def predict_action(self, x):
-        action = self.model.predict(np.array(x), use_multiprocessing=True, workers=10)[0]
+        action = self.model.predict(np.array(x), use_multiprocessing=True)[0]
         #action = self.model.predict_on_batch(np.array(x))[0]
         if type(self.env.action_space) == Discrete:
             if np.shape(action) == (1,):
