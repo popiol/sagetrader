@@ -40,11 +40,13 @@ class CustomAgent(Trainer):
         model.compile(
             optimizer=keras.optimizers.Nadam(learning_rate=0.001),
             loss="mean_squared_logarithmic_error",
+            run_eagerly=False
         )
         return model
 
     def predict_action(self, x):
-        action = self.model.predict(np.array(x))[0]
+        #action = self.model.predict(np.array(x), use_multiprocessing=True, workers=10)[0]
+        action = self.model.predict_on_batch(np.array(x))[0]
         if type(self.env.action_space) == Discrete:
             if np.shape(action) == (1,):
                 action = action[0]
@@ -71,8 +73,6 @@ class CustomAgent(Trainer):
         hist_y = []
         total = 0
         for _ in range(self.max_steps + 1):
-            if self.fitted:
-                print(self.max_steps + 1 - _)
             self.niter += 1
             x = self.transform_x(state)
             if (train and random.random() < self.explore) or not self.fitted:
@@ -146,7 +146,7 @@ class CustomAgent(Trainer):
         }
 
     def __setstate__(self, state: dict):
-        self.model = keras.models.load_model(f"{self.model_dir}/model.h5", save_format="h5")
+        self.model = keras.models.load_model(f"{self.model_dir}/model.h5")
         self.best_score = state["best_score"]
         self.explore = state["explore"]
         self.fitted = state["fitted"]

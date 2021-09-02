@@ -5,24 +5,32 @@ import numpy as np
 from simulator import StocksHistSimulator
 import os
 import common
+import shutil
 
 
 def main():
     data_dir = "data"
     if not os.path.isdir(data_dir):
         os.mkdir(data_dir)
-    common.s3_download_file("data/all_hist.csv", f"{data_dir}/all_hist.csv", if_not_exists=True)
-    common.s3_download_file("model/agent.dat", f"{data_dir}/agent.dat", if_not_exists=True)
-    common.s3_download_file("model/model.h5", f"{data_dir}/model.h5", if_not_exists=True)
+    train_file = f"{data_dir}/train.csv"
+    agent_file = f"{data_dir}/agent.dat"
+    model_file = f"{data_dir}/model.h5"
+    train_file_remote = "data/all_hist.csv"
+    agent_file_remote = "data/agent.dat"
+    model_file_remote = "data/model.h5"
+    common.s3_download_file(train_file_remote, train_file, if_not_exists=True)
+    common.s3_download_file(agent_file_remote, agent_file, if_not_exists=True)
+    common.s3_download_file(model_file_remote, model_file, if_not_exists=True)
 
     ray.init()
 
-    agent = CustomAgent(env=StocksHistSimulator, env_config={"max_steps":10000})
-    
-    filename = f"{agent.model_dir}/agent.tf"
-    if os.path.isfile(filename):
-        print("model:", filename)
-        agent.load_checkpoint(filename)
+    env_config = {"max_steps": 10000, "train_file": train_file}
+
+    agent = CustomAgent(env=StocksHistSimulator, env_config=env_config)
+
+    if os.path.isfile(agent_file):
+        print("checkpoint:", agent_file)
+        agent.load_checkpoint(agent_file)
 
     timestamp1 = time.time()
 
@@ -39,8 +47,12 @@ def main():
 
     agent.stop()
 
-    common.s3_upload_file(f"{data_dir}/agent.dat", "model/agent.dat")
-    common.s3_upload_file(f"{data_dir}/model.h5", "model/model.h5")
+    common.s3_upload_file(agent_file, agent_file_remote)
+    common.s3_upload_file(model_file, model_file_remote)
+
+    if os.getenv("SM_MODEL_DIR"):
+        shutil.copy2(model_file, os.getenv("SM_MODEL_DIR"))
+
 
 if __name__ == "__main__":
     main()

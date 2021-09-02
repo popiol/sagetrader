@@ -145,7 +145,7 @@ class StocksHistSimulator(StocksSimulator):
     def __init__(self, config):
         self.timestamp_format = "%Y-%m-%d %H:%M:%S"
         self.data_size = 0
-        self.filename = "data/all_hist.csv"
+        self.filename = config.get("train_file", "data/train.csv")
         with open(self.filename, "r") as f:
             for _ in f:
                 self.data_size += 1
