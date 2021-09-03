@@ -143,7 +143,7 @@ class CustomAgent():
         }
 
     def __setstate__(self, state: dict):
-        self.model = keras.models.load_model(f"{self.model_dir}/model-{self.worker_id}.h5")
+        self.model = keras.models.load_model(f"{self.model_dir}/model.h5")
         self.best_score = state["best_score"]
         self.explore = state["explore"]
         self.fitted = state["fitted"]
