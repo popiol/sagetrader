@@ -2,6 +2,8 @@ import gym
 import random
 import numpy as np
 from gym.spaces.discrete import Discrete
+from tensorflow.compat.v1 import disable_eager_execution
+disable_eager_execution()
 import tensorflow.keras as keras
 import pickle
 import common

@@ -19,21 +19,25 @@ estimator = RLEstimator(
     git_config={
         "repo": "https://gitlab.com/popiol/sagetrader.git",
         "branch": branch,
+        "commit": "6789ee4234760f99d2093c1f8c62514fb4b7feb1",
     },
     toolkit=sagemaker.rl.RLToolkit.RAY,
     toolkit_version=RLEstimator.RAY_LATEST_VERSION,
     framework=sagemaker.rl.RLFramework.TENSORFLOW,
     role=role,
-    instance_type="ml.m5.xlarge",
+    instance_type="ml.m5.large",
     instance_count=1,
     output_path=f"s3://{common.bucket_name}/output",
     base_job_name="rltest",
     hyperparameters={
-        "n_workers": 4,
+        "n_workers": 1,
         "n_iterations": 1,
         "max_steps": 10000,
     },
-    environment={"AWS_DEFAULT_REGION": common.region},
+    environment={
+        "AWS_DEFAULT_REGION": common.region,
+        #"SMDEBUG_LOG_LEVEL": "warning",
+    },
 )
 
 print("Fitting...")
