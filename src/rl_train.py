@@ -19,7 +19,6 @@ estimator = RLEstimator(
     git_config={
         "repo": "https://gitlab.com/popiol/sagetrader.git",
         "branch": branch,
-        "commit": "6789ee4234760f99d2093c1f8c62514fb4b7feb1",
     },
     toolkit=sagemaker.rl.RLToolkit.RAY,
     toolkit_version=RLEstimator.RAY_LATEST_VERSION,

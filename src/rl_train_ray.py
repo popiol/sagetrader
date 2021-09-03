@@ -42,7 +42,7 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
             agent.load_checkpoint(agent_file)
         agent.train()
         score = agent.evaluate(quick=rebuild)
-        print(score)
+        print("score:", score)
         return
 
     if not rebuild:
@@ -91,7 +91,12 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
             print(out)
             if errcode == 0:
                 try:
-                    score = float(out)
+                    score = None
+                    for line in out.split(b"\n"):
+                        line = line.strip()
+                        if line.startswith(b"score: "):
+                            score = float(line.split(b":")[1])
+                            break
                 except ValueError:
                     score = None
             else:
