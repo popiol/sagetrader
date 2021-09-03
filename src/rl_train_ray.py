@@ -88,6 +88,7 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
             out, err = worker.communicate()
             errcode = worker.returncode
             print(err)
+            print(out)
             if errcode == 0:
                 try:
                     score = float(out)
