@@ -39,6 +39,7 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
             env=StocksHistSimulator, env_config=env_config, worker_id=worker_id
         )
         if os.path.isfile(agent_file):
+            common.log("Load checkpoint")
             agent.load_checkpoint(agent_file)
         agent.train()
         score = agent.evaluate(quick=rebuild)
@@ -46,6 +47,7 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
         return
 
     if not rebuild:
+        common.log("Download model")
         common.s3_download_file(train_file_remote, train_file, if_not_exists=True)
         common.s3_download_file(agent_file_remote, agent_file, if_not_exists=True)
         common.s3_download_file(model_file_remote, model_file, if_not_exists=True)
@@ -120,6 +122,7 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
         print("Execution time:", timestamp2 - timestamp1)
 
         if model_changed and not rebuild:
+            common.log("Upload model")
             common.s3_upload_file(agent_file, agent_file_remote)
             common.s3_upload_file(model_file, model_file_remote)
 
