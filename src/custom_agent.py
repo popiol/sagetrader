@@ -2,8 +2,6 @@ import gym
 import random
 import numpy as np
 from gym.spaces.discrete import Discrete
-from tensorflow.compat.v1 import disable_eager_execution
-disable_eager_execution()
 import tensorflow.keras as keras
 import pickle
 import common
@@ -39,8 +37,7 @@ class CustomAgent():
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
             optimizer=keras.optimizers.Nadam(learning_rate=0.001),
-            loss="mean_squared_logarithmic_error",
-            run_eagerly=False
+            loss="mean_squared_logarithmic_error"
         )
         return model
 

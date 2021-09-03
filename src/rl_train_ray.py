@@ -39,7 +39,6 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
             env=StocksHistSimulator, env_config=env_config, worker_id=worker_id
         )
         if os.path.isfile(agent_file):
-            common.log("Load checkpoint")
             agent.load_checkpoint(agent_file)
         agent.train()
         score = agent.evaluate(quick=rebuild)
@@ -47,7 +46,6 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
         return
 
     if not rebuild:
-        common.log("Download model")
         common.s3_download_file(train_file_remote, train_file, if_not_exists=True)
         common.s3_download_file(agent_file_remote, agent_file, if_not_exists=True)
         common.s3_download_file(model_file_remote, model_file, if_not_exists=True)
@@ -89,8 +87,8 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
         for worker_id, worker in enumerate(workers):
             out, err = worker.communicate()
             errcode = worker.returncode
-            print(err)
-            print(out)
+            common.log(err)
+            common.log(out)
             if errcode == 0:
                 try:
                     score = None
@@ -105,7 +103,7 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
                 score = None
             scores[worker_id] = score
 
-        print(scores)
+        common.log(scores)
         best_worker = None
         best_score = None
         for worker_i, score in enumerate(scores):
@@ -113,7 +111,7 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
                 best_score = score
                 best_worker = str(worker_i)
         if best_worker is not None:
-            print(model_file_worker.replace("*", best_worker), "->", model_file)
+            common.log(model_file_worker.replace("*", best_worker), "->", model_file)
             shutil.copyfile(model_file_worker.replace("*", best_worker), model_file)
             shutil.copyfile(agent_file_worker.replace("*", best_worker), agent_file)
             model_changed = True
@@ -122,7 +120,6 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
         print("Execution time:", timestamp2 - timestamp1)
 
         if model_changed and not rebuild:
-            common.log("Upload model")
             common.s3_upload_file(agent_file, agent_file_remote)
             common.s3_upload_file(model_file, model_file_remote)
 
