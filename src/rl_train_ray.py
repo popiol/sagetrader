@@ -55,9 +55,9 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
         if os.path.isfile(model_file):
             os.remove(model_file)
 
-    timestamp1 = time.time()
-
     for _ in range(n_iterations):
+        timestamp1 = time.time()
+ 
         files = glob.glob(agent_file_worker)
         files.extend(glob.glob(model_file_worker))
         for file in files:
@@ -116,19 +116,19 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
             shutil.copyfile(agent_file_worker.replace("*", best_worker), agent_file)
             model_changed = True
 
-    timestamp2 = time.time()
-    print("Execution time:", timestamp2 - timestamp1)
+        timestamp2 = time.time()
+        print("Execution time:", timestamp2 - timestamp1)
 
-    if model_changed and not rebuild:
-        common.s3_upload_file(agent_file, agent_file_remote)
-        common.s3_upload_file(model_file, model_file_remote)
+        if model_changed and not rebuild:
+            common.s3_upload_file(agent_file, agent_file_remote)
+            common.s3_upload_file(model_file, model_file_remote)
 
-    if os.getenv("SM_MODEL_DIR"):
-        agent = CustomAgent(
-            env=StocksHistSimulator, env_config=env_config, worker_id=worker_id
-        )
-        agent.load_checkpoint(agent_file)
-        agent.save_model(os.getenv("SM_MODEL_DIR"))
+        if os.getenv("SM_MODEL_DIR"):
+            agent = CustomAgent(
+                env=StocksHistSimulator, env_config=env_config, worker_id=worker_id
+            )
+            agent.load_checkpoint(agent_file)
+            agent.save_model(os.getenv("SM_MODEL_DIR") + "/0")
 
 
 if __name__ == "__main__":
