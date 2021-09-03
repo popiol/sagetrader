@@ -11,7 +11,7 @@ import subprocess
 
 
 def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
-    data_dir = "data"
+    data_dir = "../data"
     if not os.path.isdir(data_dir):
         os.mkdir(data_dir)
 
@@ -69,7 +69,7 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
         for worker_id in range(n_workers):
             cmd = [
                 "/usr/bin/python3",
-                "src/rl_train_ray.py",
+                "rl_train_ray.py",
                 "--worker",
                 str(worker_id),
                 "--max_steps",

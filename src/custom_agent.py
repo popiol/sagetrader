@@ -19,7 +19,7 @@ class CustomAgent():
         self.explore = 1
         self.fitted = False
         self.best_score = None
-        self.model_dir = "data"
+        self.model_dir = "../data"
         self.model_changed = False
         self.worker_id = worker_id
 
