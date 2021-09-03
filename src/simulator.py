@@ -4,6 +4,7 @@ import random
 import math
 import datetime
 from gym.spaces import Box
+import common
 
 
 class StocksSimulator(gym.Env):
@@ -113,7 +114,7 @@ class StocksSimulator(gym.Env):
         rel_sell_price = self.relative_price_decode(action[2])
 
         if company not in self.prices:
-            print("company:", company, ", prices:", self.prices)
+            common.log("company:", company, ", prices:", self.prices)
 
         if company not in self.portfolio:
             budget = self.get_free_funds() * confidence
@@ -135,7 +136,7 @@ class StocksSimulator(gym.Env):
 
         capital = self.get_capital()
         if self.done:
-            print("capital:", capital, ", reward:", self.total_reward)
+            common.log("capital:", capital, ", reward:", self.total_reward)
         reward = capital / self.cash_init - 1
         self.total_reward += reward
         return self.state, reward, self.done, {"capital": capital, "company": self.company}

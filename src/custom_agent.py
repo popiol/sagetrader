@@ -3,12 +3,12 @@ import random
 import numpy as np
 from gym.spaces.discrete import Discrete
 import tensorflow.keras as keras
-from ray.rllib.agents import Trainer
 import pickle
+import common
 
 
-class CustomAgent(Trainer):
-    def __init__(self, env: gym.Env, config: dict = {}, env_config: dict = {}):
+class CustomAgent():
+    def __init__(self, env: gym.Env, config: dict = {}, env_config: dict = {}, worker_id=0):
         self.env = env(env_config)
         self.max_steps = self.env.max_steps
         self.max_quotes = self.env.max_quotes
@@ -20,21 +20,18 @@ class CustomAgent(Trainer):
         self.fitted = False
         self.best_score = None
         self.model_dir = "data"
+        self.model_changed = False
+        self.worker_id = worker_id
 
     def create_model(self):
         inputs = keras.layers.Input(shape=(self.max_quotes,))
         l = inputs
         l = keras.layers.Reshape((self.max_quotes, 1))(l)
         l = keras.layers.LSTM(self.max_quotes)(l)
-        l = keras.layers.Dropout(.5)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dropout(.5)(l)
         l = keras.layers.Dense(10, activation="relu")(l)
-        l = keras.layers.Dropout(.5)(l)
         l = keras.layers.Dense(10, activation="relu")(l)
-        l = keras.layers.Dropout(.5)(l)
         l = keras.layers.Dense(10, activation="relu")(l)
-        l = keras.layers.Dropout(.5)(l)
         outputs = keras.layers.Dense(3, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
@@ -45,7 +42,6 @@ class CustomAgent(Trainer):
         return model
 
     def predict_action(self, x):
-        #action = self.model.predict(np.array(x), use_multiprocessing=True, workers=10)[0]
         action = self.model.predict_on_batch(np.array(x))[0]
         if type(self.env.action_space) == Discrete:
             if np.shape(action) == (1,):
@@ -98,7 +94,7 @@ class CustomAgent(Trainer):
         if self.max_total is None or total >= self.max_total:
             self.max_total = total
         if train_x:
-            print("Fit")
+            common.log("Fit")
             nit = max(
                 1,
                 round(1 * (r - self.avg_total + 1) / (abs(self.avg_total) + 1) - 1000),
@@ -116,7 +112,7 @@ class CustomAgent(Trainer):
             self.run_episode()
             if self.niter > 100000:
                 break
-        print(
+        common.log(
             "avg r:",
             self.avg_reward,
             ", avg total:",
@@ -127,18 +123,19 @@ class CustomAgent(Trainer):
             self.explore,
         )
 
-    def evaluate(self):
-        total = self.run_episode(train=False)
+    def evaluate(self, quick=False):
+        if quick:
+            total = self.max_total
+        else:
+            total = self.run_episode(train=False)
         if self.best_score is None or total >= self.best_score:
             self.best_score = total
             self.save_checkpoint(self.model_dir)
-        return {"evaluation": {"episode_reward_min": total}}
-
-    def stop(self):
-        pass
+            return total
+        return None
 
     def __getstate__(self) -> dict:
-        keras.models.save_model(self.model, f"{self.model_dir}/model.h5", save_format="h5")
+        keras.models.save_model(self.model, f"{self.model_dir}/model-{self.worker_id}.h5", save_format="h5")
         return {
             "best_score": self.best_score,
             "explore": self.explore,
@@ -146,7 +143,7 @@ class CustomAgent(Trainer):
         }
 
     def __setstate__(self, state: dict):
-        self.model = keras.models.load_model(f"{self.model_dir}/model.h5")
+        self.model = keras.models.load_model(f"{self.model_dir}/model-{self.worker_id}.h5")
         self.best_score = state["best_score"]
         self.explore = state["explore"]
         self.fitted = state["fitted"]
@@ -154,8 +151,9 @@ class CustomAgent(Trainer):
     def save_checkpoint(self, checkpoint_dir: str = None) -> str:
         if checkpoint_dir is None:
             checkpoint_dir = self.model_dir
-        checkpoint_path = f"{checkpoint_dir}/agent.dat"
+        checkpoint_path = f"{checkpoint_dir}/agent-{self.worker_id}.dat"
         pickle.dump(self.__getstate__(), open(checkpoint_path, "wb"))
+        self.model_changed = True
         return checkpoint_path
 
     def load_checkpoint(self, checkpoint_path: str):

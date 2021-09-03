@@ -2,7 +2,11 @@ import boto3
 import sagemaker
 import os
 from botocore.exceptions import ClientError
+import sys
 
+
+def log(*x):
+    print(*x, file=sys.stderr)
 
 s3 = boto3.resource("s3")
 sess = sagemaker.Session()
