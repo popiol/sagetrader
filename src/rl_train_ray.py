@@ -124,7 +124,11 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
         common.s3_upload_file(model_file, model_file_remote)
 
     if os.getenv("SM_MODEL_DIR"):
-        shutil.copy2(model_file, os.getenv("SM_MODEL_DIR"))
+        agent = CustomAgent(
+            env=StocksHistSimulator, env_config=env_config, worker_id=worker_id
+        )
+        agent.load_checkpoint(agent_file)
+        agent.save_model(os.getenv("SM_MODEL_DIR"))
 
 
 if __name__ == "__main__":

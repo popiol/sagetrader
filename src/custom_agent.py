@@ -7,6 +7,7 @@ disable_eager_execution()
 import tensorflow.keras as keras
 import pickle
 import common
+from tensorflow import saved_model
 
 
 class CustomAgent():
@@ -161,3 +162,7 @@ class CustomAgent():
     def load_checkpoint(self, checkpoint_path: str):
         extra_data = pickle.load(open(checkpoint_path, "rb"))
         self.__setstate__(extra_data)
+
+    def save_model(self, path):
+        saved_model.save(self.model, path)
+
