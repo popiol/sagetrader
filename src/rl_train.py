@@ -30,7 +30,7 @@ estimator = RLEstimator(
     base_job_name="rltest",
     hyperparameters={
         "n_workers": 1,
-        "n_iterations": 1,
+        "n_iterations": 10,
         "max_steps": 10000,
     },
     environment={

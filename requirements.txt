@@ -4,3 +4,5 @@ tensorflow
 tensorflow_probability
 ray[rllib]
 pytest
+./lynx_api
+websockets
