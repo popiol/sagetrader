@@ -8,6 +8,14 @@ The data is pulled from the IB Web API:
 
 https://interactivebrokers.github.io/cpwebapi/
 
+Logging into the API is handled with the help of the IBeam project:
+
+https://github.com/Voyz/ibeam
+
+```sh
+docker pull voyz/ibeam
+```
+
 There are two kinds of data pulled: 
 * historical daily bars
 * real-time bid/ask/trade data
