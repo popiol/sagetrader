@@ -3,6 +3,7 @@ import sagemaker
 import os
 from botocore.exceptions import ClientError
 import sys
+import csv
 
 
 def log(*x):
@@ -31,5 +32,18 @@ def s3_download_file(obj_key, filename=None, if_not_exists=False, fail_on_missin
     except ClientError:
         if fail_on_missing:
             raise
-    
-    
+
+
+company_list_filename = "data/company_list.csv"
+
+def save_comp_list(companies):
+    with open(company_list_filename, "w") as f:
+        writer = csv.DictWriter(f, fieldnames=list(companies[0]))
+        writer.writeheader()
+        writer.writerows(companies)
+
+def load_comp_list():
+    with open(company_list_filename, "r") as f:
+        reader = csv.DictReader(f)
+        companies = list(reader)
+    return companies

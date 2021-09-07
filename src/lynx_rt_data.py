@@ -2,16 +2,14 @@ import asyncio
 import websockets
 import requests
 import json
-import common
-
 
 #resp = requests.get("https://localhost:5000/v1/api/iserver/scanner/params", verify=False)
 #print(resp.text)
 #exit()
 
-# resp = requests.post("https://localhost:5000/v1/api/iserver/secdef/search", json={"symbol": "AAPL"}, verify=False)
-# print(resp.text)
-# exit()
+#resp = requests.post("https://localhost:5000/v1/api/iserver/secdef/search", json={"symbol": "AAPL"}, verify=False)
+#print(resp.text)
+#exit()
 
 resp = requests.get("https://localhost:5000/v1/api/tickle", verify=False)
 print(resp.text)
@@ -27,8 +25,9 @@ if not resp.json()["iserver"]["authStatus"]["authenticated"]:
 
 session_id = resp.json()["session"]
 uri = "wss://api.ibkr.com/v1/api/ws"
-quotes = {}
-companies = common.load_comp_list()
+quotes = []
+error = ""
+errorcode = 0
 
 
 async def send(websocket, msg):
@@ -36,9 +35,8 @@ async def send(websocket, msg):
     await websocket.send(msg)
 
 
-async def handler(company):
-    conid = company["conid"]
-    
+async def handler():
+    global error, errorcode
     async with websockets.connect(uri) as websocket:
         req = json.dumps({"session": session_id})
         await send(websocket, req)
@@ -47,6 +45,7 @@ async def handler(company):
             print("<", msg)
             resp = json.loads(msg)
             if resp.get("topic") == "sts":
+                break
                 if resp["args"]["authenticated"]:
                     break
                 else:
@@ -56,28 +55,27 @@ async def handler(company):
             elif "error" in resp:
                 error = resp["error"]
                 errorcode = resp["code"]
-                raise Exception(errorcode, error)
+                return
 
-        params = json.dumps({"period": "5d", "bar": "1d"})
-        await send(websocket, f"smh+{conid}+{params}")
-
+        await send(websocket, 'smd+265598+{"fields":["0","1","2","3","4","5"]}')
+        #await send(websocket, 'smh+265598+{"period":"4d","bar":"1d"}')
+        
         async for msg in websocket:
             print("<", msg)
             resp = json.loads(msg)
             if "symbol" in resp:
                 server_id = resp["serverId"]
-                quotes[company["symbol"]] = resp["data"]
+                quotes.append(resp["data"])
                 break
             elif "error" in resp:
                 error = resp["error"]
                 errorcode = resp["code"]
-                raise Exception(errorcode, error)
+                return
 
-        await send(websocket, "umh+" + server_id)
+        await send(websocket, 'umh+'+server_id)
+                
 
 
-for company in companies:
-    asyncio.run(handler(company))
-    break
-
-print(quotes)
+asyncio.run(handler())
+if errorcode > 0:
+    print("error", errorcode, error)

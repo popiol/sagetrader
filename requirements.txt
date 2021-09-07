@@ -6,3 +6,4 @@ ray[rllib]
 pytest
 ./lynx_api
 websockets
+pyyaml

@@ -11,3 +11,4 @@ config.tfvars
 main.tf
 .terraform*
 data/*
+config.yml
