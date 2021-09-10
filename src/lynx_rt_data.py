@@ -2,80 +2,64 @@ import asyncio
 import websockets
 import requests
 import json
-
-#resp = requests.get("https://localhost:5000/v1/api/iserver/scanner/params", verify=False)
-#print(resp.text)
-#exit()
-
-#resp = requests.post("https://localhost:5000/v1/api/iserver/secdef/search", json={"symbol": "AAPL"}, verify=False)
-#print(resp.text)
-#exit()
-
-resp = requests.get("https://localhost:5000/v1/api/tickle", verify=False)
-print(resp.text)
-
-if not resp.text:
-    exit("Not connected")
-
-if resp.text == "error":
-    exit("Unknown error")
-
-if not resp.json()["iserver"]["authStatus"]["authenticated"]:
-    exit("Not authenticated")
-
-session_id = resp.json()["session"]
-uri = "wss://api.ibkr.com/v1/api/ws"
-quotes = []
-error = ""
-errorcode = 0
+import common
+import datetime
+import lynx_common
 
 
-async def send(websocket, msg):
-    print(">", msg)
-    await websocket.send(msg)
+def main():
+    session_id = lynx_common.get_session_id()
 
+    async def handler(companies):
+        async with websockets.connect(lynx_common.ws_url) as websocket:
+            await lynx_common.send_session_id(websocket, session_id)
 
-async def handler():
-    global error, errorcode
-    async with websockets.connect(uri) as websocket:
-        req = json.dumps({"session": session_id})
-        await send(websocket, req)
+            fields = [0, 1, 2, 3, 4, 5]
+            topic_to_company = {}
+            for company in companies:
+                conidex = company["conidex"]
+                params = json.dumps({"fields": fields})
+                topic = f"smd+{conidex}+{params}"
+                topic_to_company[topic] = company
+                await lynx_common.send(websocket, topic)
+            
+            finally_raise = None
 
-        async for msg in websocket:
-            print("<", msg)
-            resp = json.loads(msg)
-            if resp.get("topic") == "sts":
-                break
-                if resp["args"]["authenticated"]:
+            async for msg in websocket:
+                print("<", msg)
+                resp = json.loads(msg)
+                if resp.get("topic", "").startswith("smd+"):
+                    company = topic_to_company[resp.get("topic")]
+                    conidex = resp["conid"]
+                    row = {}
+                    for field in fields:
+                        row[field] = resp[field] if field in resp else None
+                    if not [x for x in row if x is not None]:
+                        raise common.SaveDataError(f"Missing data for conidex {conidex}")
+
+                    row["company"] = company["symbol"]
+                    row["conidex"] = conidex
+                    row["t"] = resp["_updated"]
+                    dt = datetime.datetime.fromtimestamp(row["t"] / 1000)
+                    day = dt.strftime("%Y%m%d")
+                    try:
+                        common.save_rt_quote(conidex, day, row)
+                    except common.SaveDataError as e:
+                        finally_raise = e
                     break
-                else:
-                    error = "Not authenticated"
-                    errorcode = 1
-                    return
-            elif "error" in resp:
-                error = resp["error"]
-                errorcode = resp["code"]
-                return
+                elif "error" in resp:
+                    error = resp["error"]
+                    errorcode = resp["code"]
+                    raise common.PullDataError(conidex, errorcode, error)
 
-        await send(websocket, 'smd+265598+{"fields":["0","1","2","3","4","5"]}')
-        #await send(websocket, 'smh+265598+{"period":"4d","bar":"1d"}')
-        
-        async for msg in websocket:
-            print("<", msg)
-            resp = json.loads(msg)
-            if "symbol" in resp:
-                server_id = resp["serverId"]
-                quotes.append(resp["data"])
-                break
-            elif "error" in resp:
-                error = resp["error"]
-                errorcode = resp["code"]
-                return
+            await lynx_common.send(websocket, f"umd+{conidex}")
 
-        await send(websocket, 'umh+'+server_id)
-                
+            if finally_raise:
+                raise finally_raise
+
+    companies = common.get_watchlist()
+    asyncio.run(handler(companies))
 
 
-asyncio.run(handler())
-if errorcode > 0:
-    print("error", errorcode, error)
+if __name__ == "__main__":
+    main()

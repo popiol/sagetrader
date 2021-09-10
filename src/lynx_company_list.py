@@ -7,7 +7,7 @@ try:
     comp_list = common.load_comp_list()
     companies = {}
     for company in comp_list:
-        companies[company["symbol"]] = company
+        companies[company["conid"]] = company
 except FileNotFoundError:
     companies = {}
 
@@ -48,7 +48,7 @@ for scan_type in scan_types:
     resp = resp.json()
 
     for item in resp["contracts"]:
-        companies[item["symbol"]] = {
+        companies[item["conid"]] = {
             "symbol": item["symbol"],
             "conid": item["con_id"],
             "conidex": item["conidex"],
