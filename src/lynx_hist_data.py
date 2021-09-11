@@ -23,6 +23,7 @@ def main(period="2d", append=True, start_conid=None):
                 resp = json.loads(msg)
                 if "symbol" in resp:
                     server_id = resp["serverId"]
+                    print("server id:", server_id)
                     data = resp["data"]
                     quotes = {}
                     if not data:

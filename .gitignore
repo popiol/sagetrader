@@ -11,4 +11,5 @@ config.tfvars
 main.tf
 .terraform*
 data/*
+!data/company_list.csv
 config.yml
