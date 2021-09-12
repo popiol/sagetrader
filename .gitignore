@@ -13,5 +13,6 @@ main.tf
 data/*
 !data/company_list.csv
 config.yml
+config.sh
 logs/*
 !logs/.placeholder

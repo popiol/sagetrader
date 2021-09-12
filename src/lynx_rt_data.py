@@ -61,6 +61,7 @@ def main():
                 elif timestamp2 - timestamp1 >= 60 and quotes:
                     dt = datetime.datetime.fromtimestamp(row["t"] / 1000)
                     day = dt.strftime("%Y%m%d")
+                    common.log("save quotes", day)
                     try:
                         common.save_rt_quotes(day, quotes)
                     except common.SaveDataError as e:
@@ -80,4 +81,6 @@ def main():
 
 
 if __name__ == "__main__":
+    common.log("Start script")
     main()
+    common.log("Finish script")

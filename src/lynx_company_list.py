@@ -85,5 +85,7 @@ def main():
         writer.writerows(companies2)
 
 if __name__ == "__main__":
+    common.log("Start script")
     main()
+    common.log("Finish script")
     

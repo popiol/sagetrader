@@ -63,10 +63,13 @@ def main(period="2d", append=True, start_conid=None):
     lynx_common.main(companies, handler, start_conid)
 
 if __name__ == "__main__":
+    common.log("Start script")
     start_conid = None
     for x in sys.argv:
         if x.startswith("--start_conid="):
             start_conid = x.split("=")[1]
+
+    common.log_debug("start_conid:", start_conid)
     
     main(start_conid=start_conid)
-    
+    common.log("Finish script")

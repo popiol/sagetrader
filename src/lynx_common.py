@@ -59,6 +59,7 @@ def main(companies, handler, start_conid=None):
     n_failures = 0
     skip = start_conid is not None
     for company in companies:
+        common.log("Start company", company["symbol"], company["conid"])
         if skip and start_conid == company["conid"]:
             skip = False
         if skip:
@@ -70,3 +71,4 @@ def main(companies, handler, start_conid=None):
             n_failures += 1
             if n_failures >= 5:
                 raise
+        common.log("Finish company", company["symbol"], company["conid"])

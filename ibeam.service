@@ -1,0 +1,11 @@
+[Unit]
+Description=IBeam
+After=docker.service
+Requires=docker.service
+
+[Service]
+ExecStart=/usr/bin/sagetrader/run_ibeam.sh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

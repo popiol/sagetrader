@@ -15,36 +15,54 @@ import io
 def getLogger():
     level = logging.DEBUG if "--debug" in sys.argv else logging.INFO
     name = os.path.basename(sys.argv[0]).replace(".py", "") or "console"
-    logging.basicConfig(
-        level=level,
-        format="[%(asctime)s %(name)s %(levelname)s] %(message)s",
+    formatter = logging.Formatter(
+        fmt="[%(asctime)s %(name)s %(levelname)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    logging.basicConfig(level=level)
     logger = logging.getLogger(name)
     dt = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     handler = logging.FileHandler(f"logs/{name}_{dt}.log", "a")
+    handler.setFormatter(formatter)
     logger.addHandler(handler)
     handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(formatter)
     logger.addHandler(handler)
     return logger
 
+
 logger = getLogger()
+
 
 def log(*x, level=logging.INFO):
     if not x or (len(x) == 1 and not x[0]):
         return
     f = io.StringIO()
     print(*x, file=f)
-    logger.log(level, f.getvalue())
+    logger.log(level, f.getvalue().strip())
+
 
 def log_debug(*x):
     log(*x, level=logging.DEBUG)
 
+
 def log_warning(*x):
     log(*x, level=logging.WARNING)
 
+
 def log_error(*x):
     log(*x, level=logging.ERROR)
+
+
+class StreamToLogger:
+    def __init__(self, level):
+        self.level = level
+
+    def write(self, x):
+        log(x, level=self.level)
+
+
+sys.stderr = StreamToLogger(logging.ERROR)
 
 
 with open("tfout.json", "r") as f:
