@@ -58,7 +58,7 @@ def main():
                 "exchange": item["listing_exchange"],
             }
 
-        print("size:", len(companies))
+        common.log("size:", len(companies))
 
     session_id = lynx_common.get_session_id()
     min_volume = 100000
@@ -69,7 +69,7 @@ def main():
         include = True
         for _ in range(6):
             resp = requests.get("https://localhost:5000/v1/api/iserver/marketdata/snapshot", params={"conids": conid, "fields": "7282"}, verify=False)
-            print(resp.text)
+            common.log(resp.text)
             if "7282_raw" in resp.json()[0]:
                 break
         if "7282_raw" in resp.json()[0]:

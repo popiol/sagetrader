@@ -6,16 +6,51 @@ import sys
 import csv
 import json
 import random
+import logging
+import logging.config
+import datetime
+import io
 
 
-def log(*x):
-    print(*x, file=sys.stderr)
+def getLogger():
+    level = logging.DEBUG if "--debug" in sys.argv else logging.INFO
+    name = os.path.basename(sys.argv[0]).replace(".py", "") or "console"
+    logging.basicConfig(
+        level=level,
+        format="[%(asctime)s %(name)s %(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    logger = logging.getLogger(name)
+    dt = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    handler = logging.FileHandler(f"logs/{name}_{dt}.log", "a")
+    logger.addHandler(handler)
+    handler = logging.StreamHandler(sys.stderr)
+    logger.addHandler(handler)
+    return logger
+
+logger = getLogger()
+
+def log(*x, level=logging.INFO):
+    if not x or (len(x) == 1 and not x[0]):
+        return
+    f = io.StringIO()
+    print(*x, file=f)
+    logger.log(level, f.getvalue())
+
+def log_debug(*x):
+    log(*x, level=logging.DEBUG)
+
+def log_warning(*x):
+    log(*x, level=logging.WARNING)
+
+def log_error(*x):
+    log(*x, level=logging.ERROR)
 
 
 with open("tfout.json", "r") as f:
-    params = json.load(f)
-    role = params["sagemaker_role_arn"]["value"]
-    main_bucket_name = params["main_bucket"]["value"]
+    tfout = json.load(f)
+    role = tfout["sagemaker_role_arn"]["value"]
+    main_bucket_name = tfout["main_bucket"]["value"]
 
 with open("config.tfvars", "r") as f:
     for line in f:
@@ -36,14 +71,16 @@ def s3_upload_file(filename, obj_key=None):
     main_bucket.upload_file(filename, obj_key)
 
 
-def s3_download_file(obj_key, filename=None, if_not_exists=False, fail_on_missing=False):
+def s3_download_file(
+    obj_key, filename=None, if_not_exists=False, fail_on_missing=False
+):
     if filename is None:
         filename = obj_key
     if if_not_exists and os.path.isfile(filename):
         return
     try:
         main_bucket.Object(obj_key).load()
-        with open(filename, 'wb') as f:
+        with open(filename, "wb") as f:
             main_bucket.download_fileobj(obj_key, f)
     except ClientError:
         if fail_on_missing:
@@ -82,7 +119,7 @@ def assert_new_timestamp(filename, first_timestamp, conid):
         timestamp = int(last[header.index("t")])
         if timestamp >= first_timestamp:
             raise AppendDataError(conid, timestamp, first_timestamp)
-    
+
 
 def save_hist_quotes(conid, month, quotes, append):
     if not quotes:
@@ -131,12 +168,23 @@ def get_watchlist():
     watchlist = random.sample(companies, 5)
     return watchlist
 
+
 class PullDataError(Exception):
     pass
+
 
 class SaveDataError(Exception):
     pass
 
+
 class AppendDataError(SaveDataError):
     def __init__(self, conid, last_timestamp, first_timestamp):
-        SaveDataError.__init__(self, "conid:", conid, "last old timestamp:", last_timestamp, "first new timestamp:", first_timestamp)
+        SaveDataError.__init__(
+            self,
+            "conid:",
+            conid,
+            "last old timestamp:",
+            last_timestamp,
+            "first new timestamp:",
+            first_timestamp,
+        )

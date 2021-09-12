@@ -87,7 +87,7 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
         for worker_id, worker in enumerate(workers):
             out, err = worker.communicate()
             errcode = worker.returncode
-            common.log(err)
+            common.log_error(err)
             common.log(out)
             if errcode == 0:
                 try:
@@ -117,7 +117,7 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
             model_changed = True
 
         timestamp2 = time.time()
-        print("Execution time:", timestamp2 - timestamp1)
+        common.log("Execution time:", timestamp2 - timestamp1)
 
         if model_changed and not rebuild:
             common.s3_upload_file(agent_file, agent_file_remote)

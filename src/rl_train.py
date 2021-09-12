@@ -29,8 +29,8 @@ estimator = RLEstimator(
     },
 )
 
-print("Fitting...")
+common.log("Fitting...")
 
 estimator.fit()
 
-print("Model created")
+common.log("Model created")

@@ -3,6 +3,8 @@ import json
 import common
 import datetime
 import lynx_common
+import sys
+import random
 
 
 def main(period="2d", append=True, start_conid=None):
@@ -17,13 +19,13 @@ def main(period="2d", append=True, start_conid=None):
             params = json.dumps({"period": period, "bar": "1d"})
             await lynx_common.send(websocket, f"smh+{conid}+{params}")
             finally_raise = None
+            server_id = None
 
             async for msg in websocket:
-                print("<", msg)
+                common.log("<", msg)
                 resp = json.loads(msg)
                 if "symbol" in resp:
                     server_id = resp["serverId"]
-                    print("server id:", server_id)
                     data = resp["data"]
                     quotes = {}
                     if not data:
@@ -47,16 +49,24 @@ def main(period="2d", append=True, start_conid=None):
                 elif "error" in resp:
                     error = resp["error"]
                     errorcode = resp["code"]
-                    raise common.PullDataError(conid, errorcode, error)
+                    finally_raise = common.PullDataError(conid, errorcode, error)
+                    break
 
-            await lynx_common.send(websocket, f"umh+{server_id}")
+            if server_id:
+                await lynx_common.send(websocket, f"umh+{server_id}")
 
             if finally_raise:
                 raise finally_raise
 
     companies = common.load_comp_list()
+    random.shuffle(companies)
     lynx_common.main(companies, handler, start_conid)
 
 if __name__ == "__main__":
-    main()
+    start_conid = None
+    for x in sys.argv:
+        if x.startswith("--start_conid="):
+            start_conid = x.split("=")[1]
+    
+    main(start_conid=start_conid)
     

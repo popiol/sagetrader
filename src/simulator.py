@@ -113,9 +113,6 @@ class StocksSimulator(gym.Env):
         rel_buy_price = self.relative_price_decode(action[1])
         rel_sell_price = self.relative_price_decode(action[2])
 
-        if company not in self.prices:
-            common.log("company:", company, ", prices:", self.prices)
-
         if company not in self.portfolio:
             budget = self.get_free_funds() * confidence
             comp_price = self.prices[company][-1]

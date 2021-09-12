@@ -10,7 +10,7 @@ ws_url = "wss://api.ibkr.com/v1/api/ws"
 
 def get_session_id():
     resp = requests.get("https://localhost:5000/v1/api/tickle", verify=False)
-    print(resp.text)
+    common.log(resp.text)
 
     if not resp.text:
         exit("Not connected")
@@ -26,13 +26,13 @@ def get_session_id():
     resp = requests.get(
         "https://localhost:5000/v1/api/iserver/marketdata/unsubscribeall", verify=False
     )
-    print(resp.text)
+    common.log(resp.text)
 
     return session_id
     
 
 async def send(websocket, msg):
-    print(">", msg)
+    common.log(">", msg)
     await websocket.send(msg)
 
 
@@ -41,7 +41,7 @@ async def send_session_id(websocket, session_id):
     await send(websocket, req)
 
     async for msg in websocket:
-        print("<", msg)
+        common.log("<", msg)
         resp = json.loads(msg)
         if resp.get("topic") == "sts":
             if resp["args"]["authenticated"]:

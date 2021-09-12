@@ -32,7 +32,7 @@ def main():
             finally_raise = None
 
             async for msg in websocket:
-                print("<", msg)
+                common.log("<", msg)
                 resp = json.loads(msg)
                 if resp.get("topic", "").startswith("smd+"):
                     topic_base = "+".join(resp["topic"].split("+")[:2])

@@ -1,14 +1,10 @@
 import sagemaker
 import boto3
 from botocore.exceptions import ClientError
+import common
 
-s3 = boto3.resource("s3")
-sess = sagemaker.Session()
-bucket_name = sess.default_bucket()
-bucket = s3.Bucket(bucket_name)
-role = "arn:aws:iam::278088188282:role/service-role/AmazonSageMaker-ExecutionRole-20210714T012499"
-region = sess.boto_region_name
-deepar_img = sagemaker.image_uris.retrieve("forecasting-deepar", region)
+
+deepar_img = sagemaker.image_uris.retrieve("forecasting-deepar", common.region)
 endpoint_name = "rltest"
 
 predictor = estimator.deploy(
@@ -24,7 +20,7 @@ predictor = sagemaker.predictor.Predictor(
 model = sagemaker.model.Model(
     image_uri=deepar_img,
     model_data="s3://sagemaker-us-east-2-278088188282/model/deepar-2021-07-16-19-47-44-405/output/model.tar.gz",
-    role=role,
+    role=common.role,
 )
 
 try:
@@ -54,5 +50,5 @@ for config in configs:
 for model in models:
     model_name = model["ModelName"]
     if model_name not in used_models:
-        print("deleting", model_name)
+        common.log("deleting", model_name)
         sm.delete_model(ModelName=model_name)
