@@ -178,7 +178,7 @@ def save_hist_quotes(conid, month, quotes, append):
         assert_new_timestamp(filename, quotes[0]["t"], conid)
     add_header = not os.path.isfile(filename)
     with open(filename, mode) as f:
-        writer = csv.DictWriter(f, fieldnames=list(quotes[0]))
+        writer = csv.DictWriter(f, fieldnames=sorted(list(quotes[0])))
         if add_header:
             writer.writeheader()
         writer.writerows(quotes)
@@ -199,7 +199,7 @@ def save_rt_quotes(day, quotes):
     else:
         add_header = True
     with open(filename, "a") as f:
-        writer = csv.DictWriter(f, fieldnames=list(quotes[0]))
+        writer = csv.DictWriter(f, fieldnames=sorted(list(quotes[0])))
         if add_header:
             writer.writeheader()
         writer.writerows(quotes)

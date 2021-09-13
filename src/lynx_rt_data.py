@@ -39,9 +39,11 @@ def main():
                 await lynx_common.send(websocket, topic)
 
             finally_raise = None
-            first_row = {x["conidex"]: {} for x in companies}
-            last_row = copy.deepcopy(first_row)
-            row = {}
+            empty_row = {x["conidex"]: {} for x in companies}
+            first_row = copy.deepcopy(empty_row)
+            last_row = copy.deepcopy(empty_row)
+            row = copy.deepcopy(empty_row)
+            last_added = copy.deepcopy(empty_row)
 
             async for msg in websocket:
                 common.log("<", msg)
@@ -49,19 +51,23 @@ def main():
                 if resp.get("topic", "").startswith("smd+"):
                     topic_base = "+".join(resp["topic"].split("+")[:2])
                     company = topic_to_company[topic_base]
-                    conidex = resp["conid"]
+                    conidex = resp["conidEx"]
                     for field in fields:
                         if field in resp:
-                            row[field] = resp[field]
+                            row[conidex][field] = resp[field]
                             last_row[conidex][field] = resp[field]
-                            if field not in first_row:
+                            if field not in first_row[conidex]:
                                 first_row[conidex][field] = resp[field]
-                    if len(row) >= len(fields):
-                        row["company"] = company["symbol"]
-                        row["conidex"] = conidex
-                        row["t"] = resp["_updated"]
-                        quotes.append(row)
-                        row = {}
+                    for conidex in row:
+                        common.log("new:", row[conidex])
+                        common.log("prev:", last_added[conidex])
+                        if len(row[conidex]) >= len(fields) and row[conidex] != last_added[conidex]:
+                            last_added[conidex] = copy.deepcopy(row[conidex])
+                            row[conidex]["company"] = company["symbol"]
+                            row[conidex]["conidex"] = conidex
+                            row[conidex]["t"] = resp["_updated"]
+                            quotes.append(row[conidex])                            
+                            row[conidex] = {}
                 elif "error" in resp:
                     error = resp["error"]
                     errorcode = resp["code"]
@@ -84,6 +90,10 @@ def main():
                             finally_raise = e
                         quotes = []
                         first_row = copy.deepcopy(last_row)
+                    else:
+                        common.log(quotes)
+                        common.log(first_row)
+                        common.log(last_row)
                     timestamp1 = time.time()                    
 
             for company in companies:
