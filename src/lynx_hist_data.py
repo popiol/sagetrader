@@ -7,7 +7,7 @@ import sys
 import random
 
 
-def main(period="2d", append=True, start_conid=None):
+def main(period="2d", append=True, start_conid=None, if_not_exists=False):
     session_id = lynx_common.get_session_id()
 
     async def handler(company):
@@ -22,10 +22,14 @@ def main(period="2d", append=True, start_conid=None):
             server_id = None
 
             async for msg in websocket:
-                common.log("<", msg)
+                if len(msg) > 200:
+                    common.log_debug("<", msg)
+                else:
+                    common.log("<", msg)
                 resp = json.loads(msg)
                 if "symbol" in resp:
                     server_id = resp["serverId"]
+                    common.log("server_id:", server_id)
                     data = resp["data"]
                     quotes = {}
                     if not data:
@@ -60,9 +64,17 @@ def main(period="2d", append=True, start_conid=None):
 
     companies = common.load_comp_list()
     random.shuffle(companies)
-    lynx_common.main(companies, handler, start_conid)
+    lynx_common.main(companies, handler, start_conid, if_not_exists)
 
 if __name__ == "__main__":
+    if common.already_running():
+        common.log("Already running")
+        exit()
+
+    if common.already_finished():
+        common.log("Already finished")
+        exit()
+
     common.log("Start script")
     start_conid = None
     for x in sys.argv:

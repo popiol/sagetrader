@@ -4,6 +4,9 @@ import requests
 import json
 import common
 import datetime
+import os
+import glob
+import shutil
 
 
 ws_url = "wss://api.ibkr.com/v1/api/ws"
@@ -55,20 +58,48 @@ async def send_session_id(websocket, session_id):
             errorcode = resp["code"]
             raise Exception(errorcode, error)
 
-def main(companies, handler, start_conid=None):    
+def main(companies, handler, start_conid=None, if_not_exists=False):
     n_failures = 0
     skip = start_conid is not None
     for company in companies:
-        common.log("Start company", company["symbol"], company["conid"])
         if skip and start_conid == company["conid"]:
             skip = False
         if skip:
             continue
+        common.log("Start company", company["symbol"], company["conid"])
+        path = common.hist_quotes_filename.split("{")[0] + company["conid"]
+        if os.path.isdir(path):
+            try:
+                years = [x.split("/")[-1] for x in glob.glob(path + "/*")]
+                min_path = path + "/" + min(years)
+                max_path = path + "/" + max(years)
+                filename = min(x.split("/")[-1] for x in glob.glob(min_path + "/*"))
+                min_path = min_path + "/" + filename
+                filename = max(x.split("/")[-1] for x in glob.glob(max_path + "/*"))
+                max_path = max_path + "/" + filename
+                first_timestamp = int(common.get_first_timestamp(min_path))
+                last_timestamp = int(common.get_last_timestamp(max_path))
+                dt0 = datetime.datetime.fromtimestamp(first_timestamp/1000)
+                dt1 = datetime.datetime.fromtimestamp(last_timestamp/1000)
+                dt2 = datetime.datetime.now()
+                if dt2 - dt1 > datetime.timedelta(days=7):
+                    common.log("Outdated data exists -- removing")
+                    shutil.rmtree(path)
+                elif dt2 - dt0 < datetime.timedelta(days=7):
+                    common.log("Incomplete data exists -- removing")
+                    shutil.rmtree(path)
+                elif if_not_exists:
+                    common.log("Finish company", company["symbol"], company["conid"], f"- History already exists ({path})")
+                    continue
+            except Exception:
+                common.log("Invalid data exists -- removing")
+                shutil.rmtree(path)
         try:
             asyncio.run(handler(company))
             n_failures = 0
-        except (common.PullDataError, common.SaveDataError):
+            common.log("Finish company", company["symbol"], company["conid"])
+        except (common.PullDataError, common.SaveDataError) as e:
             n_failures += 1
+            common.log("Error:", e)
             if n_failures >= 5:
                 raise
-        common.log("Finish company", company["symbol"], company["conid"])

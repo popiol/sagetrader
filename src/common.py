@@ -10,22 +10,28 @@ import logging
 import logging.config
 import datetime
 import io
+import psutil
+import glob
 
+
+logfile_timestamp_format = "%Y%m%d%H%M%S"
+log_timestamp_format = "%Y-%m-%d %H:%M:%S"
+log_filename = None
+prev_log_filename = None
 
 def getLogger():
+    global log_filename
     level = logging.DEBUG if "--debug" in sys.argv else logging.INFO
     name = os.path.basename(sys.argv[0]).replace(".py", "") or "console"
     formatter = logging.Formatter(
         fmt="[%(asctime)s %(name)s %(levelname)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
+        datefmt=log_timestamp_format,
     )
     logging.basicConfig(level=level)
     logger = logging.getLogger(name)
-    dt = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    handler = logging.FileHandler(f"logs/{name}_{dt}.log", "a")
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    handler = logging.StreamHandler(sys.stderr)
+    dt = datetime.datetime.now().strftime(logfile_timestamp_format)
+    log_filename = f"logs/{name}_{dt}.log"
+    handler = logging.FileHandler(log_filename, "a")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     return logger
@@ -126,17 +132,36 @@ def load_comp_list():
     return companies
 
 
-def assert_new_timestamp(filename, first_timestamp, conid):
-    with open(filename, "r") as f:
-        header = next(f).strip().split(",")
-        last = None
-        for line in f:
-            if "," in line:
-                last = line
+def get_last_timestamp(filename):
+    try:
+        with open(filename, "r") as f:
+            header = next(f).strip().split(",")
+            last = None
+            for line in f:
+                if "," in line:
+                    last = line
         last = last.strip().split(",")
         timestamp = int(last[header.index("t")])
-        if timestamp >= first_timestamp:
-            raise AppendDataError(conid, timestamp, first_timestamp)
+        return timestamp
+    except Exception:
+        return None
+
+
+def get_first_timestamp(filename):
+    try:
+        with open(filename, "r") as f:
+            header = next(f).strip().split(",")
+            last = next(f).strip().split(",")
+        timestamp = int(last[header.index("t")])
+        return timestamp
+    except Exception:
+        return None
+
+
+def assert_new_timestamp(filename, first_timestamp, conid):
+    timestamp = get_last_timestamp(filename)
+    if timestamp >= first_timestamp:
+        raise AppendDataError(conid, timestamp, first_timestamp)
 
 
 def save_hist_quotes(conid, month, quotes, append):
@@ -183,7 +208,21 @@ def save_rt_quotes(day, quotes):
 
 def get_watchlist():
     companies = load_comp_list()
-    watchlist = random.sample(companies, 5)
+    conidexs = None
+    if prev_log_filename is not None:
+        with open(prev_log_filename, "r") as f:
+            for line in f:
+                if "Companies:" in line:
+                    conidexs = line.split(":")[-1].strip()
+                    conidexs = json.loads(conidexs.replace("'", '"'))
+                    break
+    if conidexs is not None:
+        watchlist = []
+        for company in companies:
+            if company["conidex"] in conidexs:
+                watchlist.append(company)
+    else:
+        watchlist = random.sample(companies, 5)
     return watchlist
 
 
@@ -206,3 +245,42 @@ class AppendDataError(SaveDataError):
             "first new timestamp:",
             first_timestamp,
         )
+
+def already_running():
+    name = os.path.basename(sys.argv[0])
+    if not name:
+        return False
+    nproc = 0
+    for proc in psutil.process_iter():
+        if proc.name() == "python3":
+            for cmd in proc.cmdline():
+                if name in cmd:
+                    nproc += 1
+                    if nproc > 1:
+                        return True
+    return False
+
+def already_finished():
+    global prev_log_filename
+    name = os.path.basename(sys.argv[0]).replace(".py", "")
+    if not name:
+        return False
+    try:
+        last_file = max(x.split("/")[-1] for x in glob.glob(f"logs/{name}_??????????????.log") if x != log_filename and os.path.getsize(x) > 10000)
+    except ValueError:
+        return False
+    filename = "logs/" + last_file
+    log("filename:", filename)
+    timestamp = last_file.split("_")[-1].split(".")[0]
+    dt1 = datetime.datetime.strptime(timestamp, logfile_timestamp_format)
+    dt2 = datetime.datetime.now()
+    if dt2 - dt1 > datetime.timedelta(hours=3):
+        return False
+    prev_log_filename = filename
+    finished = False
+    with open(filename, "r") as f:
+        for line in f:
+            if "Finish script" in line:
+                finished = True
+                break
+    return finished
