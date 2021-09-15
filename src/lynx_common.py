@@ -99,7 +99,8 @@ def main(companies, handler, start_conid=None, if_not_exists=False):
             n_failures = 0
             common.log("Finish company", company["symbol"], company["conid"])
         except (common.PullDataError, common.SaveDataError) as e:
-            n_failures += 1
-            common.log("Error:", e)
+            if type(e) != common.AppendDataError:
+                n_failures += 1
+            common.log(type(e).__name__, e)
             if n_failures >= 5:
                 raise

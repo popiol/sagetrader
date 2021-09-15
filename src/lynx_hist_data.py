@@ -5,6 +5,7 @@ import datetime
 import lynx_common
 import sys
 import random
+import time
 
 
 def main(period="2d", append=True, start_conid=None, if_not_exists=False):
@@ -20,6 +21,7 @@ def main(period="2d", append=True, start_conid=None, if_not_exists=False):
             await lynx_common.send(websocket, f"smh+{conid}+{params}")
             finally_raise = None
             server_id = None
+            timestamp1 = time.time()
 
             async for msg in websocket:
                 if len(msg) > 200:
@@ -54,6 +56,11 @@ def main(period="2d", append=True, start_conid=None, if_not_exists=False):
                     error = resp["error"]
                     errorcode = resp["code"]
                     finally_raise = common.PullDataError(conid, errorcode, error)
+                    break
+
+                timestamp2 = time.time()
+                if timestamp2 - timestamp1 > 5:
+                    common.log("Timeout waiting for", conid)
                     break
 
             if server_id:

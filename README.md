@@ -16,7 +16,7 @@ There are two kinds of data pulled:
 * historical daily bars
 * real-time bid/ask/trade data
 
-The data is stored in an S3 bucket and for training and prediction of two separate models.
+The data is stored in an S3 bucket and used for training and prediction of two separate models.
 One model is based on the historical data and picks the currently most interesting companies.
 The second model takes advantage of the real-time data to make the decision to buy or sell shares.
 

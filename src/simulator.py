@@ -136,7 +136,12 @@ class StocksSimulator(gym.Env):
             common.log("capital:", capital, ", reward:", self.total_reward)
         reward = capital / self.cash_init - 1
         self.total_reward += reward
-        return self.state, reward, self.done, {"capital": capital, "company": self.company}
+        return (
+            self.state,
+            reward,
+            self.done,
+            {"capital": capital, "company": self.company},
+        )
 
 
 class StocksHistSimulator(StocksSimulator):
@@ -158,10 +163,97 @@ class StocksHistSimulator(StocksSimulator):
         config["max_steps"] = self.max_steps
         config["n_comps"] = self.n_comps
         config["max_quotes"] = self.max_quotes
-        StocksSimulator.__init__(
-            self,
-            config
+        StocksSimulator.__init__(self, config)
+
+    def _reset(self):
+        self.start = random.randint(
+            50, self.data_size - self.max_steps // self.n_comps - 1
         )
+        self.lines_processed = 0
+        self.file = open(self.filename, "r")
+        for _ in range(self.start * self.n_comps):
+            self.next_data()
+            if self.lines_processed >= self.start:
+                break
+        self.buffered_state = None
+        self.buffered_company = None
+        self.next_state()
+        return self.next_state()
+
+    def next_data(self):
+        if self.prices_it is not None:
+            try:
+                company, prices = next(self.prices_it)
+            except StopIteration:
+                self.prices_it = None
+        if self.prices_it is None:
+            timestamp = self.file.readline().strip()
+            if timestamp == "":
+                self.done = True
+                return None, None
+            timestamp = datetime.datetime.strptime(timestamp, self.timestamp_format)
+            timestamp = timestamp.strftime(self.timestamp_format)
+            companies = self.file.readline().strip().split(",")
+            prices = self.file.readline().strip().split(",")
+            for company, price in zip(companies, prices):
+                price = float(price)
+                if company not in self.prices:
+                    self.prices[company] = [price]
+                    self.timestamps[company] = [timestamp]
+                else:
+                    self.prices[company].append(price)
+                    self.timestamps[company].append(timestamp)
+            comps = list(self.prices)[: self.n_comps]
+            prices2 = {x: self.prices[x] for x in comps}
+            self.prices_it = iter(prices2.items())
+            company, prices = next(self.prices_it)
+            self.lines_processed += 1
+        return company, prices
+
+    def next_state(self):
+        company, prices = self.next_data()
+
+        if self.done:
+            self.file.close()
+
+        if company is None:
+            self.company = self.buffered_company
+            return self.buffered_state
+
+        state = []
+        start = 0
+        for price_i in range(self.max_quotes + 1):
+            if start >= len(prices):
+                break
+            end = start + pow(2, price_i)
+            state.append(np.mean(prices[-end : len(prices) - start]))
+            start = end
+        for price_i, price in enumerate(state[:-1]):
+            state[price_i] = self.relative_price_encode(price / state[price_i + 1] - 1)
+        state = state[:-1]
+        state.reverse()
+        state = [self.relative_price_encode(0)] * (self.max_quotes - len(state)) + state
+
+        return_state = self.buffered_state
+        self.company = self.buffered_company
+        self.buffered_state = state
+        self.buffered_company = company
+
+        return return_state
+
+
+class StocksRTSimulator(StocksSimulator):
+    def __init__(self, config):
+        self.max_steps = config.get("max_steps", 50000)
+        self.n_comps = config.get("n_comps", 500)
+        self.max_quotes = config.get("max_quotes", 7)
+        self.max_steps = math.floor(
+            min(self.max_steps / self.n_comps, self.data_size - 200) * self.n_comps
+        )
+        config["max_steps"] = self.max_steps
+        config["n_comps"] = self.n_comps
+        config["max_quotes"] = self.max_quotes
+        StocksSimulator.__init__(self, config)
 
     def _reset(self):
         self.start = random.randint(

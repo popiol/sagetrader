@@ -59,14 +59,15 @@ def main():
                             if field not in first_row[conidex]:
                                 first_row[conidex][field] = resp[field]
                     for conidex in row:
-                        common.log("new:", row[conidex])
-                        common.log("prev:", last_added[conidex])
-                        if len(row[conidex]) >= len(fields) and row[conidex] != last_added[conidex]:
+                        if (
+                            len(row[conidex]) >= len(fields)
+                            and row[conidex] != last_added[conidex]
+                        ):
                             last_added[conidex] = copy.deepcopy(row[conidex])
                             row[conidex]["company"] = company["symbol"]
                             row[conidex]["conidex"] = conidex
                             row[conidex]["t"] = resp["_updated"]
-                            quotes.append(row[conidex])                            
+                            quotes.append(row[conidex])
                             row[conidex] = {}
                 elif "error" in resp:
                     error = resp["error"]
@@ -75,9 +76,12 @@ def main():
                     break
 
                 timestamp2 = time.time()
-                if timestamp2 - timestamp0 >= 36000:
-                    break
-                elif timestamp2 - timestamp0 >= 300 and first_row == last_row:
+                if timestamp2 - timestamp0 >= 300 and timestamp2 - timestamp1 >= 60 and first_row == last_row:
+                    if datetime.datetime.now().hour < 21:
+                        finally_raise = Exception(
+                            "The trading session hasn't started yet"
+                        )
+                    common.log("No changes in 5 min")
                     break
                 elif timestamp2 - timestamp1 >= 60:
                     if quotes and first_row != last_row:
@@ -91,14 +95,12 @@ def main():
                         quotes = []
                         first_row = copy.deepcopy(last_row)
                     else:
-                        common.log(quotes)
-                        common.log(first_row)
-                        common.log(last_row)
-                    timestamp1 = time.time()                    
+                        common.log("nothing to save")
+                    timestamp1 = time.time()
 
             for company in companies:
                 conidex = company["conidex"]
-                await lynx_common.send(websocket, f"umd+{conidex}"+"+{}")
+                await lynx_common.send(websocket, f"umd+{conidex}" + "+{}")
 
             if finally_raise:
                 raise finally_raise
@@ -112,7 +114,7 @@ if __name__ == "__main__":
     if common.already_running():
         common.log("Already running")
         exit()
-    
+
     if common.already_finished():
         common.log("Already finished")
         exit()
