@@ -1,6 +1,6 @@
 # m h  dom mon dow   command
-#13,43 0-1 * * 2-6 cd /usr/bin/sagetrader; python3 src/lynx_hist_data.py
-#* * * * 2-6 cd /usr/bin/sagetrader; python3 src/lynx_hist_data.py
+13,43 0-1 * * 2-6 cd /usr/bin/sagetrader; python3 src/lynx_hist_data.py
+* * * * 2-6 cd /usr/bin/sagetrader; python3 src/lynx_hist_data.py
 */30 14-23 * * 1-5 cd /usr/bin/sagetrader; python3 src/lynx_rt_data.py
 13,43 6-8 * * 6 cd /usr/bin/sagetrader; python3 src/lynx_company_list.py
 13,43 10-11 * * 6 cd /usr/bin/sagetrader; python3 src/lynx_hist_data_init.py
