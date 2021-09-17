@@ -3,7 +3,7 @@
 export APP_VER=`echo "$CI_COMMIT_BRANCH" | tr '[:upper:]' '[:lower:]'`
 
 if [ -z "$APP_VER" ]; then
-    export APP_VER=`git branch --show-current`
+    export APP_VER=`git branch | grep "*" | cut -d" " -f2`
 fi
 
 if [[ "$APP_VER" == "master" || "$APP_VER" == "main" || "$APP_VER" == "$CI_DEFAULT_BRANCH" ]]; then
