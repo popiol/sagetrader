@@ -75,11 +75,9 @@ def main(period="2d", append=True, start_conid=None, if_not_exists=False):
 
 if __name__ == "__main__":
     if common.already_running():
-        common.log("Already running")
         exit()
 
     if common.already_finished():
-        common.log("Already finished")
         exit()
 
     common.log("Start script")
