@@ -8,12 +8,16 @@ import common
 from tensorflow import saved_model
 
 
-class CustomAgent():
-    def __init__(self, env: gym.Env, config: dict = {}, env_config: dict = {}, worker_id=0):
+class CustomAgent:
+    def __init__(
+        self, env: gym.Env, config: dict = {}, env_config: dict = {}, worker_id=0
+    ):
         self.env = env(env_config)
-        self.max_steps = self.env.max_steps
+        self.train_max_steps = self.env.train_max_steps
+        self.validate_max_steps = self.env.validate_max_steps
         self.max_quotes = self.env.max_quotes
-        self.model = self.create_model()
+        self.hist_model = self.create_hist_model()
+        self.rt_model = self.create_rt_model()
         self.avg_reward = 0
         self.avg_total = 0
         self.max_total = None
@@ -25,41 +29,46 @@ class CustomAgent():
         self.worker_id = worker_id
 
     def create_hist_model(self):
-        inputs = keras.layers.Input(shape=(self.max_quotes,))
+        inputs = keras.layers.Input(shape=(self.hist_max_quotes,))
         l = inputs
-        l = keras.layers.Reshape((self.max_quotes, 1))(l)
-        l = keras.layers.LSTM(self.max_quotes)(l)
+        l = keras.layers.Reshape((self.hist_max_quotes, 1))(l)
+        l = keras.layers.LSTM(self.hist_max_quotes)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
-        outputs = keras.layers.Dense(3, activation="sigmoid")(l)
+        outputs = keras.layers.Dense(1, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
             optimizer=keras.optimizers.Nadam(learning_rate=0.001),
-            loss="mean_squared_logarithmic_error"
+            loss="mean_squared_logarithmic_error",
         )
         return model
 
     def create_rt_model(self):
-        inputs = keras.layers.Input(shape=(self.max_quotes,))
+        inputs = keras.layers.Input(shape=(self.rt_max_quotes,))
         l = inputs
-        l = keras.layers.Reshape((self.max_quotes, 1))(l)
-        l = keras.layers.LSTM(self.max_quotes)(l)
+        l = keras.layers.Reshape((self.rt_max_quotes, 1))(l)
+        l = keras.layers.LSTM(self.rt_max_quotes)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
-        outputs = keras.layers.Dense(3, activation="sigmoid")(l)
+        outputs = keras.layers.Dense(2, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
             optimizer=keras.optimizers.Nadam(learning_rate=0.001),
-            loss="mean_squared_logarithmic_error"
+            loss="mean_squared_logarithmic_error",
         )
         return model
 
     def predict_action(self, x):
-        action = self.model.predict_on_batch(np.array(x))[0]
+        if self.env.last_event_type == self.env.HIST_EVENT:
+            confidence = self.hist_model.predict_on_batch(np.array(x))[0]
+            action = [confidence, 0.5, 0.5]
+        else:
+            buy_price, sell_price = self.rt_model.predict_on_batch(np.array(x))[0]
+            action = [0, buy_price, sell_price]
         if type(self.env.action_space) == Discrete:
             if np.shape(action) == (1,):
                 action = action[0]
@@ -78,46 +87,68 @@ class CustomAgent():
     def transform_y(self, action):
         return action[0] if np.shape(action) == (1,) else action
 
-    def run_episode(self, train=True):
+    def run_episode(self, train=True, live=False):
+        stage = (
+            self.env.TRAINING
+            if train
+            else (self.env.VALIDATION if not live else self.env.PREDICTION)
+        )
+        self.env.stage = stage
         state = self.env.reset()
-        train_x = []
-        train_y = []
-        hist_x = []
-        hist_y = []
+        hist_set = {
+            "train_x": [],
+            "train_y": [],
+            "hist_x": [],
+            "hist_y": [],
+        }
+        rt_set = {
+            "train_x": [],
+            "train_y": [],
+            "hist_x": [],
+            "hist_y": [],
+        }
         total = 0
         for _ in range(self.max_steps + 1):
             self.niter += 1
             x = self.transform_x(state)
+            if self.env.last_event_type == self.env.HIST_EVENT:
+                trainset = hist_set
+                model = self.hist_model
+            else:
+                trainset = rt_set
+                model = self.rt_model
             if (train and random.random() < self.explore) or not self.fitted:
                 action = self.env.action_space.sample()
             else:
-                action = self.predict_action([x])
+                action = self.predict_action([x], stage)
             state, r, d, info = self.env.step(action)
             total += r
             if train:
                 y = self.transform_y(action)
                 if r > self.avg_reward + 3 * abs(self.avg_reward):
-                    train_x.append(x)
-                    train_y.append(y)
-                hist_x.append(x)
-                hist_y.append(y)
+                    trainset["train_x"].append(x)
+                    trainset["train_y"].append(y)
+                trainset["hist_x"].append(x)
+                trainset["hist_y"].append(y)
             self.avg_reward = self.avg_reward * 0.99 + r * 0.01
             if d:
                 break
         if train and total > self.avg_total + 3 * abs(self.avg_total):
-            train_x.extend(hist_x)
-            train_y.extend(hist_y)
+            trainset["train_x"].extend(trainset["hist_x"])
+            trainset["train_y"].extend(trainset["hist_y"])
         self.avg_total = self.avg_total * 0.9 + total * 0.1
         if self.max_total is None or total >= self.max_total:
             self.max_total = total
-        if train_x:
+        if trainset["train_x"]:
             common.log("Fit")
             nit = max(
                 1,
                 round(1 * (r - self.avg_total + 1) / (abs(self.avg_total) + 1) - 1000),
             )
             for _ in range(nit):
-                self.model.fit(np.array(train_x), np.array(train_y), epochs=10, verbose=0)
+                model.fit(
+                    np.array(trainset["train_x"]), np.array(trainset["train_y"]), epochs=10, verbose=0
+                )
             self.fitted = True
             self.explore = max(0.3, self.explore * 0.9999)
         return total
@@ -152,7 +183,9 @@ class CustomAgent():
         return None
 
     def __getstate__(self) -> dict:
-        keras.models.save_model(self.model, f"{self.model_dir}/model-{self.worker_id}.h5", save_format="h5")
+        keras.models.save_model(
+            self.model, f"{self.model_dir}/model-{self.worker_id}.h5", save_format="h5"
+        )
         return {
             "best_score": self.best_score,
             "explore": self.explore,
@@ -179,4 +212,3 @@ class CustomAgent():
 
     def save_model(self, path):
         saved_model.save(self.model, path)
-

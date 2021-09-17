@@ -254,13 +254,14 @@ def already_running():
     name = os.path.basename(sys.argv[0])
     if not name:
         return False
-    nproc = 0
+    pids = []
     for proc in psutil.process_iter():
         if proc.name() == "python3":
             for cmd in proc.cmdline():
                 if name in cmd:
-                    nproc += 1
-                    if nproc > 1:
+                    pids.append(f"{proc.pid} {proc.create_time()}")
+                    if len(pids) > 1:
+                        log("Already running:", pids)
                         return True
     return False
 
@@ -285,6 +286,7 @@ def already_finished():
     with open(filename, "r") as f:
         for line in f:
             if "Finish script" in line:
+                log("Already finished:", filename)
                 finished = True
                 break
     return finished

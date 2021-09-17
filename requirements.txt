@@ -1,4 +1,5 @@
 sagemaker
+Cython
 pyarrow
 tensorflow
 tensorflow_probability

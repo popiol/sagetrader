@@ -5,11 +5,9 @@ import common
 
 if __name__ == "__main__":
     if common.already_running():
-        common.log("Already running")
         exit()
 
     if common.already_finished():
-        common.log("Already finished")
         exit()
 
     common.log("Start script")

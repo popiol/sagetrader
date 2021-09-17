@@ -21,7 +21,8 @@ estimator = RLEstimator(
     hyperparameters={
         "n_workers": 1,
         "n_iterations": 10,
-        "max_steps": 10000,
+        "train_max_steps": 10000,
+        "validate_max_steps": 100000,
     },
     environment={
         "AWS_DEFAULT_REGION": common.region,
