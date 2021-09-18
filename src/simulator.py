@@ -5,7 +5,7 @@ import math
 import datetime
 from gym.spaces import Box
 import common
-
+import csv
 
 class StocksSimulator(gym.Env):
     HIST_EVENT = 0
@@ -13,6 +13,7 @@ class StocksSimulator(gym.Env):
     TRAINING = 0
     VALIDATION = 1
     PREDICTION = 2
+    DT_FORMAT = "%Y-%m-%d %H:%M:%S"
 
     def __init__(self, config):
         self.max_steps = config["max_steps"]
@@ -169,6 +170,7 @@ class StocksRTSimulator(StocksSimulator):
             self.max_steps = 1
         if self.stage == self.PREDICTION:
             dt1 = datetime.datetime.now() - datetime.timedelta(years=1)
+            dt2 = datetime.datetime.now()
         else:
             dt1 = datetime.datetime.strptime("20170901", "YYYYMMDD")
             dt2 = datetime.datetime.now()
@@ -176,45 +178,91 @@ class StocksRTSimulator(StocksSimulator):
             l = self.max_steps // 300 + 360
             shift = random.randrange(diff - l)
             dt1 += datetime.timedelta(days=shift)
-        
+            dt2 = dt1 + datetime.timedelta(days=360)
+        self.dt = dt1
+        self.stop_before = dt2
+        self.month_loaded = None
+        self.comp_iter = None
+        while self.next_state() is not None:
+            pass
+        self.stop_before = None
         return self.next_state()
 
     def next_data(self):
-        if self.prices_it is not None:
-            try:
-                company, prices = next(self.prices_it)
-            except StopIteration:
-                self.prices_it = None
-        if self.prices_it is None:
-            timestamp = self.file.readline().strip()
-            if timestamp == "":
-                self.done = True
-                return None, None
-            timestamp = datetime.datetime.strptime(timestamp, self.timestamp_format)
-            timestamp = timestamp.strftime(self.timestamp_format)
-            companies = self.file.readline().strip().split(",")
-            prices = self.file.readline().strip().split(",")
-            for company, price in zip(companies, prices):
-                price = float(price)
-                if company not in self.prices:
-                    self.prices[company] = [price]
-                    self.timestamps[company] = [timestamp]
+        if self.stop_before is not None:
+            self.last_event_type = self.HIST_EVENT
+        else:
+            if self.last_event_type == self.HIST_EVENT:
+                self.last_event_type = self.RT_EVENT
+            else:
+                conids, prices = self.next_rt_data()
+                if conids is None:
+                    self.last_event_type = self.HIST_EVENT
                 else:
-                    self.prices[company].append(price)
-                    self.timestamps[company].append(timestamp)
-            company, prices = next(self.prices_it)
-            self.lines_processed += 1
-        return company, prices
+                    self.last_event_type = self.RT_EVENT
+                    return conids, prices
+        if self.last_event_type == self.HIST_EVENT:
+            return self.next_hist_data()
+        else:
+            return self.next_rt_data()
+
+    def next_rt_data(self):
+        for conid in self.watchlist:
+            for row in self.data:
+                if row["conid"] != conid:
+                    continue
+                dt = common.row_to_datetime(row)
+            
+
+    def next_hist_data(self):
+        if self.comp_iter is not None:
+            try:
+                return next(self.comp_iter)
+            except StopIteration:
+                pass
+        for _ in range(10):
+            month_to_load = self.dt.strftime("%Y%m")
+            if self.month_loaded is None or month_to_load > self.month_loaded:
+                year = self.dt.strftime("%Y")
+                month = self.dt.strftime("%m")
+                files = common.find_hist_quotes(year, month)
+                self.data = []
+                for filename in files:
+                    with open(filename, "r") as f:
+                        reader = csv.DictReader(f)
+                        self.data.extend(list(reader))
+                self.month_loaded = month_to_load
+            closest_dt = None
+            for row in self.data:
+                dt = common.row_to_datetime(row)
+                if dt >= self.dt:
+                    closest_dt = dt
+                    break
+            if closest_dt is None:
+                next_day = self.dt + datetime.timedelta(days=1)
+                if next_day == self.stop_before:
+                    return None, None
+                self.dt = next_day
+                continue
+            conids = []
+            for row in self.data:
+                dt = common.row_to_datetime(row)
+                if dt == closest_dt:
+                    conid = row["conid"]
+                    self.prices.get(conid, []).append([row["c"], row["o"], row["h"], row["l"], row["v"]])
+                    self.timestamps.get(conid, []).append(dt.strftime(self.DT_FORMAT))
+                    conids.append(conid)
+            self.comp_iter = iter({x: self.prices[x] for x in conids})
+            break
+        if conids:
+            return next(self.comp_iter)
+        return None, None
 
     def next_state(self):
-        company, prices = self.next_data()
+        conid, prices = self.next_data()
 
-        if self.done:
-            self.file.close()
-
-        if company is None:
-            self.company = self.buffered_company
-            return self.buffered_state
+        if conid is None:
+            return None
 
         state = []
         start = 0
@@ -222,17 +270,15 @@ class StocksRTSimulator(StocksSimulator):
             if start >= len(prices):
                 break
             end = start + pow(2, price_i)
-            state.append(np.mean(prices[-end : len(prices) - start]))
+            fragment = prices[-end : len(prices) - start]
+            mean = np.array(fragment).mean(axis=0)
+            state.append(mean)
             start = end
         for price_i, price in enumerate(state[:-1]):
-            state[price_i] = self.relative_price_encode(price / state[price_i + 1] - 1)
+            for var, var_i in enumerate(price):
+                state[price_i][var_i] = self.relative_price_encode(var / state[price_i + 1][var_i] - 1)
         state = state[:-1]
         state.reverse()
-        state = [self.relative_price_encode(0)] * (self.max_quotes - len(state)) + state
+        state = ([self.relative_price_encode(0)] * len(state[0])) * (self.max_quotes - len(state)) + state
 
-        return_state = self.buffered_state
-        self.company = self.buffered_company
-        self.buffered_state = state
-        self.buffered_company = company
-
-        return return_state
+        return state

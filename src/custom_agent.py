@@ -29,7 +29,7 @@ class CustomAgent:
         self.worker_id = worker_id
 
     def create_hist_model(self):
-        inputs = keras.layers.Input(shape=(self.hist_max_quotes,))
+        inputs = keras.layers.Input(shape=(self.hist_max_quotes,5))
         l = inputs
         l = keras.layers.Reshape((self.hist_max_quotes, 1))(l)
         l = keras.layers.LSTM(self.hist_max_quotes)(l)
@@ -147,7 +147,10 @@ class CustomAgent:
             )
             for _ in range(nit):
                 model.fit(
-                    np.array(trainset["train_x"]), np.array(trainset["train_y"]), epochs=10, verbose=0
+                    np.array(trainset["train_x"]),
+                    np.array(trainset["train_y"]),
+                    epochs=10,
+                    verbose=0,
                 )
             self.fitted = True
             self.explore = max(0.3, self.explore * 0.9999)

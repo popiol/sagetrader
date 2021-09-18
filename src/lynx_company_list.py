@@ -3,6 +3,8 @@ import csv
 import common
 import lynx_common
 import time
+import os
+import shutil
 
 
 def main():
@@ -67,17 +69,22 @@ def main():
     for conid in companies:
         company = companies[conid]
         include = True
-        for _ in range(6):
+        for _ in range(10):
             resp = requests.get("https://localhost:5000/v1/api/iserver/marketdata/snapshot", params={"conids": conid, "fields": "7282"}, verify=False)
             common.log(resp.text)
             if "7282_raw" in resp.json()[0]:
                 break
+            time.sleep(5)
         if "7282_raw" in resp.json()[0]:
             volume = float(resp.json()[0]["7282_raw"])
             if volume < min_volume:
                 include = False
         if include:
             companies2.append(company)
+        else:
+            path = common.hist_quotes_filename.split("{")[0] + conid
+            if os.path.isdir(path):
+                shutil.rmtree(path)
 
     with open(common.company_list_filename, "w") as f:
         writer = csv.DictWriter(f, fieldnames=list(companies2[0]))

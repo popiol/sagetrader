@@ -210,6 +210,16 @@ def save_rt_quotes(day, quotes):
     s3_upload_file(filename)
 
 
+def find_hist_quotes(year, month):
+    dir = hist_quotes_filename.split("{")[0]
+    files = []
+    for path in glob.iglob(dir + "/*"):
+        filename = path + "/" + year + "/" + month + ".csv"
+        if os.path.isfile(filename):
+            files.append(filename)
+    return files
+
+
 def get_watchlist():
     companies = load_comp_list()
     conidexs = None
@@ -290,3 +300,7 @@ def already_finished():
                 finished = True
                 break
     return finished
+
+def row_to_datetime(row):
+    return datetime.datetime.fromtimestamp(row["t"] // 1000)
+    
