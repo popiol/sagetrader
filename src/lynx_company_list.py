@@ -66,17 +66,22 @@ def main():
     min_volume = 100000
 
     companies2 = []
+    n = 0
     for conid in companies:
+        if n % 20 == 0:
+            time.sleep(10)
+        n += 1
         company = companies[conid]
         include = True
         for _ in range(10):
             resp = requests.get("https://localhost:5000/v1/api/iserver/marketdata/snapshot", params={"conids": conid, "fields": "7282"}, verify=False)
-            common.log(resp.text)
-            if "7282_raw" in resp.json()[0]:
+            common.log(resp.status_code, resp.text)
+            if resp.status_code == 200 and "7282_raw" in resp.json()[0]:
                 break
-            time.sleep(5)
-        if "7282_raw" in resp.json()[0]:
+            time.sleep(.4)
+        if resp.status_code == 200 and "7282_raw" in resp.json()[0]:
             volume = float(resp.json()[0]["7282_raw"])
+            common.log("Volume:", volume)
             if volume < min_volume:
                 include = False
         if include:
