@@ -285,7 +285,6 @@ def already_finished():
     except ValueError:
         return False
     filename = "logs/" + last_file
-    log("filename:", filename)
     timestamp = last_file.split("_")[-1].split(".")[0]
     dt1 = datetime.datetime.strptime(timestamp, logfile_timestamp_format)
     dt2 = datetime.datetime.now()

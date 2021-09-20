@@ -160,6 +160,7 @@ class StocksRTSimulator(StocksSimulator):
         config["max_quotes"] = self.max_quotes
         self.stage = self.TRAINING
         StocksSimulator.__init__(self, config)
+        self.bar_header = ["c", "o", "h", "l", "v"]
 
     def _reset(self):
         if self.stage == self.TRAINING:
@@ -208,10 +209,14 @@ class StocksRTSimulator(StocksSimulator):
 
     def next_rt_data(self):
         for conid in self.watchlist:
+            bar = None
             for row in self.data:
                 if row["conid"] != conid:
                     continue
                 dt = common.row_to_datetime(row)
+                if dt > self.dt:
+                    bar = {x: y for x, y in zip(self.bar_header, row)}
+                    break
             
 
     def next_hist_data(self):
@@ -249,7 +254,10 @@ class StocksRTSimulator(StocksSimulator):
                 dt = common.row_to_datetime(row)
                 if dt == closest_dt:
                     conid = row["conid"]
-                    self.prices.get(conid, []).append([row["c"], row["o"], row["h"], row["l"], row["v"]])
+                    bar = []
+                    for key in self.bar_header:
+                        bar[key].append(row[key])
+                    self.prices.get(conid, []).append(bar)
                     self.timestamps.get(conid, []).append(dt.strftime(self.DT_FORMAT))
                     conids.append(conid)
             self.comp_iter = iter({x: self.prices[x] for x in conids})

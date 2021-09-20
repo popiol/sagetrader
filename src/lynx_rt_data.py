@@ -76,7 +76,7 @@ def main():
                     break
 
                 timestamp2 = time.time()
-                if timestamp2 - timestamp0 >= 300 and timestamp2 - timestamp1 >= 60 and first_row == last_row:
+                if timestamp2 - timestamp0 >= 300 and timestamp2 - timestamp1 >= 60 and (first_row == last_row or not quotes):
                     if datetime.datetime.now().hour < 21:
                         finally_raise = Exception(
                             "The trading session hasn't started yet"
