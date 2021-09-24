@@ -62,11 +62,9 @@ class CustomAgent:
 
     def predict_action(self, x):
         if self.env.last_event_type == self.env.HIST_EVENT:
-            #print(x)
             confidence = self.hist_model.predict_on_batch(np.array(x))[0]
             action = [confidence, 0.5, 0.5]
         else:
-            #print(x)
             buy_price, sell_price = self.rt_model.predict_on_batch(np.array(x))[0]
             action = [0, buy_price, sell_price]
         if type(self.env.action_space) == Discrete:
@@ -133,14 +131,12 @@ class CustomAgent:
             )
             print("nit:", nit)
             for _ in range(nit):
-                #print(hist_set["train_y"])
                 self.hist_model.fit(
                     np.array(hist_set["train_x"]),
                     np.array(hist_set["train_y"]),
                     epochs=10,
                     verbose=0,
                 )
-                #print(rt_set["train_y"])
                 self.rt_model.fit(
                     np.array(rt_set["train_x"]),
                     np.array(rt_set["train_y"]),

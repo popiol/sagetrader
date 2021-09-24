@@ -20,6 +20,7 @@ log_timestamp_format = "%Y-%m-%d %H:%M:%S"
 log_filename = None
 prev_log_filename = None
 
+
 def getLogger():
     global log_filename
     level = logging.DEBUG if "--debug" in sys.argv else logging.INFO
@@ -270,6 +271,7 @@ class AppendDataError(SaveDataError):
             first_timestamp,
         )
 
+
 def already_running():
     name = os.path.basename(sys.argv[0])
     if not name:
@@ -285,13 +287,18 @@ def already_running():
                         return True
     return False
 
+
 def already_finished():
     global prev_log_filename
     name = os.path.basename(sys.argv[0]).replace(".py", "")
     if not name:
         return False
     try:
-        last_file = max(x.split("/")[-1] for x in glob.glob(f"logs/{name}_??????????????.log") if x != log_filename and os.path.getsize(x) > 10000)
+        last_file = max(
+            x.split("/")[-1]
+            for x in glob.glob(f"logs/{name}_??????????????.log")
+            if x != log_filename and os.path.getsize(x) > 10000
+        )
     except ValueError:
         return False
     filename = "logs/" + last_file
@@ -310,10 +317,13 @@ def already_finished():
                 break
     return finished
 
+
 def row_to_datetime(row):
     return datetime.datetime.fromtimestamp(int(row["t"]) // 1000)
-    
+
+
 def price_to_float(x):
-    x = re.sub(r"^[^0-9]","",x)
-    x = re.sub(r"[^0-9]$","",x)
+    x = re.sub(r"^[^0-9]", "", x)
+    x = re.sub(r"[^0-9]$", "", x)
+    x = x.replace(",", "")
     return float(x)
