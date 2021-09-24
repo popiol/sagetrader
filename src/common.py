@@ -31,6 +31,8 @@ def getLogger():
     logger = logging.getLogger(name)
     dt = datetime.datetime.now().strftime(logfile_timestamp_format)
     log_filename = f"logs/{name}_{dt}.log"
+    if not os.path.isdir("logs"):
+        os.mkdir("logs")
     handler = logging.FileHandler(log_filename, "a")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
@@ -220,6 +222,13 @@ def find_hist_quotes(year, month):
     return files
 
 
+def find_random_rt_quotes():
+    path = rt_quotes_filename.split("{")[0]
+    while not path.endswith(".csv"):
+        path = random.choice(glob.glob(path + "/*"))
+    return path
+
+
 def get_watchlist():
     companies = load_comp_list()
     conidexs = None
@@ -301,5 +310,5 @@ def already_finished():
     return finished
 
 def row_to_datetime(row):
-    return datetime.datetime.fromtimestamp(row["t"] // 1000)
+    return datetime.datetime.fromtimestamp(int(row["t"]) // 1000)
     

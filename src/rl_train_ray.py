@@ -1,8 +1,11 @@
+import os
+if os.getcwd().endswith("/src"):
+    os.chdir("..")
+
 from custom_agent import CustomAgent
 import time
 import numpy as np
-from simulator import StocksHistSimulator
-import os
+from simulator import StocksRTSimulator
 import common
 import shutil
 import sys
@@ -11,32 +14,34 @@ import subprocess
 
 
 def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
-    data_dir = "../data"
+    data_dir = "data"
     if not os.path.isdir(data_dir):
         os.mkdir(data_dir)
 
     train_file = f"{data_dir}/train.csv"
     agent_file = f"{data_dir}/agent.dat"
-    model_file = f"{data_dir}/model.h5"
+    hist_model_file = f"{data_dir}/hist_model.h5"
+    rt_model_file = f"{data_dir}/rt_model.h5"
     train_file_remote = "data/all_hist.csv"
     agent_file_remote = "data/agent.dat"
-    model_file_remote = "data/model.h5"
+    hist_model_file_remote = "data/hist_model.h5"
+    rt_model_file_remote = "data/rt_model.h5"
     agent_file_worker = f"{data_dir}/agent-*.dat"
-    model_file_worker = f"{data_dir}/model-*.h5"
+    hist_model_file_worker = f"{data_dir}/hist_model-*.h5"
+    rt_model_file_worker = f"{data_dir}/rt_model-*.h5"
 
     n_workers = n_workers or 1
     n_iterations = n_iterations or 1
     max_steps = max_steps or 10000
     model_changed = False
-    
+
     env_config = {
-        "max_steps": max_steps,
         "train_file": train_file,
     }
 
     if worker_id is not None:
         agent = CustomAgent(
-            env=StocksHistSimulator, env_config=env_config, worker_id=worker_id
+            env=StocksRTSimulator, env_config=env_config, worker_id=worker_id
         )
         if os.path.isfile(agent_file):
             agent.load_checkpoint(agent_file)
@@ -48,18 +53,22 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
     if not rebuild:
         common.s3_download_file(train_file_remote, train_file, if_not_exists=True)
         common.s3_download_file(agent_file_remote, agent_file, if_not_exists=True)
-        common.s3_download_file(model_file_remote, model_file, if_not_exists=True)
+        common.s3_download_file(hist_model_file_remote, hist_model_file, if_not_exists=True)
+        common.s3_download_file(rt_model_file_remote, rt_model_file, if_not_exists=True)
     else:
         if os.path.isfile(agent_file):
             os.remove(agent_file)
-        if os.path.isfile(model_file):
-            os.remove(model_file)
+        if os.path.isfile(hist_model_file):
+            os.remove(hist_model_file)
+        if os.path.isfile(rt_model_file):
+            os.remove(rt_model_file)
 
     for _ in range(n_iterations):
         timestamp1 = time.time()
- 
+
         files = glob.glob(agent_file_worker)
-        files.extend(glob.glob(model_file_worker))
+        files.extend(glob.glob(hist_model_file_worker))
+        files.extend(glob.glob(rt_model_file_worker))
         for file in files:
             os.remove(file)
 
@@ -69,11 +78,11 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
         for worker_id in range(n_workers):
             cmd = [
                 "/usr/bin/python3",
-                "rl_train_ray.py",
+                "src/rl_train_ray.py",
                 "--worker",
                 str(worker_id),
                 "--max_steps",
-                str(max_steps)
+                str(max_steps),
             ]
             if rebuild:
                 cmd.append("--rebuild")
@@ -111,8 +120,10 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
                 best_score = score
                 best_worker = str(worker_i)
         if best_worker is not None:
-            common.log(model_file_worker.replace("*", best_worker), "->", model_file)
-            shutil.copyfile(model_file_worker.replace("*", best_worker), model_file)
+            common.log(hist_model_file_worker.replace("*", best_worker), "->", hist_model_file)
+            shutil.copyfile(hist_model_file_worker.replace("*", best_worker), hist_model_file)
+            common.log(rt_model_file_worker.replace("*", best_worker), "->", rt_model_file)
+            shutil.copyfile(rt_model_file_worker.replace("*", best_worker), rt_model_file)
             shutil.copyfile(agent_file_worker.replace("*", best_worker), agent_file)
             model_changed = True
 
@@ -121,14 +132,14 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
 
         if model_changed and not rebuild:
             common.s3_upload_file(agent_file, agent_file_remote)
-            common.s3_upload_file(model_file, model_file_remote)
+            common.s3_upload_file(hist_model_file, hist_model_file_remote)
+            common.s3_upload_file(rt_model_file, rt_model_file_remote)
 
         if os.getenv("SM_MODEL_DIR"):
             agent = CustomAgent(
-                env=StocksHistSimulator, env_config=env_config, worker_id=worker_id
+                env=StocksRTSimulator, env_config=env_config, worker_id=worker_id
             )
             agent.load_checkpoint(agent_file)
-            agent.save_model(os.getenv("SM_MODEL_DIR") + "/0")
 
 
 if __name__ == "__main__":

@@ -6,6 +6,8 @@ import datetime
 from gym.spaces import Box
 import common
 import csv
+import time
+
 
 class StocksSimulator(gym.Env):
     HIST_EVENT = 0
@@ -16,8 +18,9 @@ class StocksSimulator(gym.Env):
     DT_FORMAT = "%Y-%m-%d %H:%M:%S"
 
     def __init__(self, config):
-        self.max_steps = config["max_steps"]
         self.max_quotes = config["max_quotes"]
+        self.watchlist_size = config.get("watchlist_size", 5)
+        self.confidence_th = config.get("confidence_th", 0.2)
 
         # action space: for each company: buy confidence, buy price, sell price
         self.action_space = Box(0.0, 1.0, (3,))
@@ -44,6 +47,8 @@ class StocksSimulator(gym.Env):
         self.orders = {}
         self.company = None
         self.cash = self.cash_init
+        self.capital = self.get_capital()
+        self.watchlist = []
         self.state = self._reset()
         self.total_reward = 0
         return self.state
@@ -54,16 +59,17 @@ class StocksSimulator(gym.Env):
     def place_order(self, company: str, n_shares: int, buy: bool, rel_limit: float):
         """
         :param company: The company code
+        :param n_shares: The number of shares to buy/sell
         :param buy: True for buy order, False for sell order
         :param rel_limit: the price limit relative to the current price
         """
-        limit = round(self.prices[company][-1] * (1 + rel_limit), 2)
+        limit = round(self.get_current_price(company) * (1 + rel_limit), 2)
         self.orders[company] = {"n_shares": n_shares, "buy": buy, "limit": limit}
 
     def handle_orders(self):
         orders = {}
         for company, order in self.orders.items():
-            price = self.prices[company][-1]
+            price = self.get_current_price(company)
             timestamp = self.timestamps[company][-1]
             if "timestamp" not in order:
                 order["timestamp"] = timestamp
@@ -92,10 +98,16 @@ class StocksSimulator(gym.Env):
     def relative_price_encode(self, x):
         return max(0, min(1, math.pow(abs(x), 1 / 3) * math.copysign(1, x) + 0.5))
 
+    def get_current_price(self, company):
+        if self.last_event_type == self.HIST_EVENT or company not in self.rt_prices:
+            return self.prices[company][-1][0]
+        else:
+            return self.rt_prices[company][-1][0]
+
     def get_capital(self):
         capital = self.cash
         for company, item in self.portfolio.items():
-            price = self.prices[company][-1]
+            price = self.get_current_price(company)
             capital += item["n_shares"] * price
         return capital
 
@@ -113,41 +125,50 @@ class StocksSimulator(gym.Env):
         self.steps += 1
         if self.steps > self.max_steps:
             self.done = True
-        company = self.company
-        self.state, self.last_event_type = self.next_state()
         self.handle_orders()
-        confidence = action[0] - action[1]
+        confidence = action[0]
         rel_buy_price = self.relative_price_decode(action[1])
         rel_sell_price = self.relative_price_decode(action[2])
 
-        if company not in self.portfolio:
-            budget = self.get_free_funds() * confidence
-            comp_price = self.prices[company][-1]
-            buy_price = (1 + rel_buy_price) * comp_price
-            n_shares = math.floor(budget / buy_price)
-            value = n_shares * comp_price
-        else:
-            n_shares = 0
-            value = 0
+        if self.last_event_type == self.HIST_EVENT:
+            self.watchlist = []
+            for company in self.portfolio:
+                self.watchlist.append(company)
 
-        if n_shares > 0 and value >= self.min_transaction_value:
-            self.place_order(company, n_shares, True, rel_buy_price)
+            if (
+                len(self.watchlist) < self.watchlist_size
+                and confidence > self.confidence_th
+            ):
+                self.watchlist.append(self.company)
 
-        if company in self.portfolio:
-            item = self.portfolio[company]
-            n_shares = item["n_shares"]
-            self.place_order(company, n_shares, False, rel_sell_price)
+        if self.last_event_type == self.RT_EVENT:
+            if self.company in self.portfolio:
+                item = self.portfolio[self.company]
+                n_shares = item["n_shares"]
+                self.place_order(self.company, n_shares, False, rel_sell_price)
+            else:
+                budget = self.get_free_funds() * confidence
+                comp_price = self.get_current_price(self.company)
+                buy_price = (1 + rel_buy_price) * comp_price
+                n_shares = math.floor(budget / buy_price)
+                value = n_shares * comp_price
+                if n_shares > 0 and value >= self.min_transaction_value:
+                    self.place_order(self.company, n_shares, True, rel_buy_price)
 
-        capital = self.get_capital()
+        self.state = self.next_state()
+        if self.state is None:
+            self.done = True
+        prev_capital = self.capital
+        self.capital = self.get_capital()
         if self.done:
-            common.log("capital:", capital, ", reward:", self.total_reward)
-        reward = capital / self.cash_init - 1
+            common.log("capital:", self.capital, ", reward:", self.total_reward)
+        reward = self.capital / prev_capital - 1
         self.total_reward += reward
         return (
             self.state,
             reward,
             self.done,
-            {"capital": capital, "company": self.company},
+            {},
         )
 
 
@@ -156,11 +177,20 @@ class StocksRTSimulator(StocksSimulator):
         self.train_max_steps = config.get("train_max_steps", 10000)
         self.validate_max_steps = config.get("validate_max_steps", 100000)
         self.max_quotes = config.get("max_quotes", 8)
-        config["max_steps"] = self.max_steps
+        config["train_max_steps"] = self.train_max_steps
+        config["validate_max_steps"] = self.validate_max_steps
         config["max_quotes"] = self.max_quotes
         self.stage = self.TRAINING
-        StocksSimulator.__init__(self, config)
         self.bar_header = ["c", "o", "h", "l", "v"]
+        self.rt_header = {
+            "price": "31",
+            "volume": "7762",
+            "bid": "84",
+            "ask_size": "85",
+            "ask": "86",
+            "bid_size": "88",
+        }
+        StocksSimulator.__init__(self, config)
 
     def _reset(self):
         if self.stage == self.TRAINING:
@@ -173,7 +203,7 @@ class StocksRTSimulator(StocksSimulator):
             dt1 = datetime.datetime.now() - datetime.timedelta(years=1)
             dt2 = datetime.datetime.now()
         else:
-            dt1 = datetime.datetime.strptime("20170901", "YYYYMMDD")
+            dt1 = datetime.datetime.strptime("20170901", "%Y%m%d")
             dt2 = datetime.datetime.now()
             diff = (dt2 - dt1).days
             l = self.max_steps // 300 + 360
@@ -184,47 +214,114 @@ class StocksRTSimulator(StocksSimulator):
         self.stop_before = dt2
         self.month_loaded = None
         self.comp_iter = None
+        self.rt_data = None
+        self.bars = None
         while self.next_state() is not None:
             pass
         self.stop_before = None
         return self.next_state()
 
     def next_data(self):
-        if self.stop_before is not None:
+        if self.stop_before is not None or not self.watchlist:
             self.last_event_type = self.HIST_EVENT
         else:
-            if self.last_event_type == self.HIST_EVENT:
+            if self.last_event_type == self.HIST_EVENT and self.eod:
                 self.last_event_type = self.RT_EVENT
-            else:
-                conids, prices = self.next_rt_data()
-                if conids is None:
+            if self.last_event_type == self.RT_EVENT:
+                conid, prices = self.next_rt_data()
+                if conid is None:
                     self.last_event_type = self.HIST_EVENT
                 else:
-                    self.last_event_type = self.RT_EVENT
-                    return conids, prices
-        if self.last_event_type == self.HIST_EVENT:
-            return self.next_hist_data()
-        else:
-            return self.next_rt_data()
+                    return conid, prices
+        return self.next_hist_data()
 
     def next_rt_data(self):
-        for conid in self.watchlist:
-            bar = None
-            for row in self.data:
-                if row["conid"] != conid:
-                    continue
-                dt = common.row_to_datetime(row)
-                if dt > self.dt:
-                    bar = {x: y for x, y in zip(self.bar_header, row)}
-                    break
-            
+        if self.bars is None:
+            self.bars = {}
+            for conid in self.watchlist:
+                for row in self.data:
+                    if row["conid"] != conid:
+                        continue
+                    dt = common.row_to_datetime(row)
+                    if dt > self.dt:
+                        bar = {}
+                        for key in self.bar_header:
+                            bar[key] = float(row[key])
+                        self.bars[conid] = bar
+                        break
+        if self.rt_data is None:
+            self.rt_data = []
+            self.rt_prices = {}
+            self.rt_scale = {}
+            self.rt_shift = {}
+            self.vol_scale = {}
+            self.size_scale = {}
+            for conid in self.watchlist:
+                self.rt_prices[conid] = []
+                filename = common.find_random_rt_quotes()
+                with open(filename, "r") as f:
+                    reader = csv.DictReader(f)
+                    data = list(reader)
+                row = random.choice(data)
+                conidex = row["conidex"]
+                first_price = None
+                for row_i, row in enumerate(data):
+                    if row["conidex"] == conidex:
+                        dt = common.row_to_datetime(row)
+                        hour = dt.strftime("%H%M%S")
+                        complete = (row_i + 1) / len(data)
+                        self.rt_data.append((conid, row, hour, complete))
+                        if first_price is None:
+                            first_price = row[self.rt_header["price"]]
+                        last_price = row[self.rt_header["price"]]
+                        volume = row[self.rt_header["volume"]]
+                first_price = float(first_price)
+                last_price = float(last_price)
+                volume = float(volume)
+                if conid in self.bars:
+                    self.rt_scale[conid] = self.bars[conid]["o"] / first_price
+                    self.rt_shift[conid] = (
+                        self.bars[conid]["c"] - last_price * self.rt_scale[conid]
+                    )
+                    self.vol_scale[conid] = self.bars[conid]["v"] / volume
+                else:
+                    self.rt_scale[conid] = self.prices[conid][-1][0] / first_price
+                    self.rt_shift[conid] = 0
+                    self.vol_scale[conid] = (
+                        self.prices[conid][-1][self.bar_header.index("v")] / volume
+                    )
+                self.size_scale[conid] = first_price / volume
+            self.rt_data.sort(key=lambda x: x[2])
+            self.rt_iter = iter(self.rt_data)
+        try:
+            conid, row, hour, complete = next(self.rt_iter)
+            rt = []
+            for key, val in self.rt_header.items():
+                x = float(row[val])
+                if key in ["price", "ask", "bid"]:
+                    x *= self.rt_scale[conid]
+                    x += complete * self.rt_shift[conid]
+                elif key == "volume":
+                    x *= self.vol_scale[conid]
+                else:
+                    x *= self.size_scale[conid]
+                rt.append(x)
+            self.rt_prices[conid].append(rt)
+            return conid, self.rt_prices[conid]
+        except StopIteration:
+            self.rt_data = None
+            self.bars = None
+            return None, None
 
     def next_hist_data(self):
+        self.eod = False
         if self.comp_iter is not None:
             try:
-                return next(self.comp_iter)
+                conid, prices = next(self.comp_iter)
+                self.eod = (conid == self.last_hist_conid)
+                return conid, prices
             except StopIteration:
-                pass
+                self.comp_iter = None
         for _ in range(10):
             month_to_load = self.dt.strftime("%Y%m")
             if self.month_loaded is None or month_to_load > self.month_loaded:
@@ -240,15 +337,16 @@ class StocksRTSimulator(StocksSimulator):
             closest_dt = None
             for row in self.data:
                 dt = common.row_to_datetime(row)
-                if dt >= self.dt:
+                if dt > self.dt:
                     closest_dt = dt
                     break
             if closest_dt is None:
-                next_day = self.dt + datetime.timedelta(days=1)
-                if next_day == self.stop_before:
-                    return None, None
-                self.dt = next_day
+                self.dt = self.dt + datetime.timedelta(days=1)
                 continue
+            else:
+                self.dt = closest_dt
+            if self.stop_before is not None and self.dt >= self.stop_before:
+                return None, None
             conids = []
             for row in self.data:
                 dt = common.row_to_datetime(row)
@@ -256,13 +354,23 @@ class StocksRTSimulator(StocksSimulator):
                     conid = row["conid"]
                     bar = []
                     for key in self.bar_header:
-                        bar[key].append(row[key])
-                    self.prices.get(conid, []).append(bar)
-                    self.timestamps.get(conid, []).append(dt.strftime(self.DT_FORMAT))
+                        bar.append(float(row[key]))
+                    if conid in self.prices:
+                        self.prices[conid].append(bar)
+                        self.timestamps[conid].append(dt.strftime(self.DT_FORMAT))
+                    else:
+                        self.prices[conid] = [bar]
+                        self.timestamps[conid] = [dt.strftime(self.DT_FORMAT)]
                     conids.append(conid)
-            self.comp_iter = iter({x: self.prices[x] for x in conids})
+                elif dt > closest_dt:
+                    break
+            if conids:
+                self.last_hist_conid = conids[-1]
+                self.comp_iter = iter({x: self.prices[x] for x in conids}.items())
+            else:
+                self.comp_iter = None
             break
-        if conids:
+        if self.comp_iter is not None:
             return next(self.comp_iter)
         return None, None
 
@@ -272,6 +380,7 @@ class StocksRTSimulator(StocksSimulator):
         if conid is None:
             return None
 
+        self.company = conid
         state = []
         start = 0
         for price_i in range(self.max_quotes + 1):
@@ -279,14 +388,28 @@ class StocksRTSimulator(StocksSimulator):
                 break
             end = start + pow(2, price_i)
             fragment = prices[-end : len(prices) - start]
-            mean = np.array(fragment).mean(axis=0)
+            mean = np.array(fragment).mean(axis=0).tolist()
             state.append(mean)
             start = end
         for price_i, price in enumerate(state[:-1]):
-            for var, var_i in enumerate(price):
-                state[price_i][var_i] = self.relative_price_encode(var / state[price_i + 1][var_i] - 1)
-        state = state[:-1]
+            for var_i, var in enumerate(price):
+                if abs(state[price_i + 1][var_i]) > 0.001:
+                    state[price_i][var_i] = self.relative_price_encode(
+                        var / state[price_i + 1][var_i] - 1
+                    )
+                else:
+                    state[price_i][var_i] = 0
+        if len(state) > 1:
+            state = state[:-1]
+        else:
+            state = [[self.relative_price_encode(0)] * len(state[0])]
         state.reverse()
-        state = ([self.relative_price_encode(0)] * len(state[0])) * (self.max_quotes - len(state)) + state
+        state = (
+            np.full(
+                (self.max_quotes - len(state), len(state[0])),
+                self.relative_price_encode(0),
+            ).tolist()
+            + state
+        )
 
         return state
