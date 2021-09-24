@@ -62,10 +62,10 @@ class CustomAgent:
 
     def predict_action(self, x):
         if self.env.last_event_type == self.env.HIST_EVENT:
-            confidence = self.hist_model.predict_on_batch(np.array(x))[0]
+            confidence = self.hist_model.predict_on_batch(np.array(x).astype(np.float32))[0]
             action = [confidence, 0.5, 0.5]
         else:
-            buy_price, sell_price = self.rt_model.predict_on_batch(np.array(x))[0]
+            buy_price, sell_price = self.rt_model.predict_on_batch(np.array(x).astype(np.float32))[0]
             action = [0, buy_price, sell_price]
         if type(self.env.action_space) == Discrete:
             if np.shape(action) == (1,):
@@ -74,6 +74,14 @@ class CustomAgent:
             action = max(0, action)
             action = min(self.env.action_space.n - 1, action)
         return action
+
+    def fit(self, model, x, y):
+        model.fit(
+            np.array(x).astype(np.float32),
+            np.array(y).astype(np.float32),
+            epochs=10,
+            verbose=0,
+        )
 
     def transform_x(self, state):
         return state
@@ -131,18 +139,8 @@ class CustomAgent:
             )
             print("nit:", nit)
             for _ in range(nit):
-                self.hist_model.fit(
-                    np.array(hist_set["train_x"]),
-                    np.array(hist_set["train_y"]),
-                    epochs=10,
-                    verbose=0,
-                )
-                self.rt_model.fit(
-                    np.array(rt_set["train_x"]),
-                    np.array(rt_set["train_y"]),
-                    epochs=10,
-                    verbose=0,
-                )
+                self.fit(self.hist_model, hist_set["train_x"], hist_set["train_y"])
+                self.fit(self.rt_model, rt_set["train_x"], rt_set["train_y"])
             self.fitted = True
             self.explore = max(0.3, self.explore * 0.9999)
         if self.max_total is None or total >= self.max_total:
@@ -172,6 +170,8 @@ class CustomAgent:
             total = self.max_total
         else:
             total = self.run_episode(train=False)
+        common.log("Best score:", self.best_score)
+        common.log("Current score:", total)
         if self.best_score is None or total >= self.best_score:
             self.best_score = total
             self.save_checkpoint(self.model_dir)
