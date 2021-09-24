@@ -12,6 +12,7 @@ import datetime
 import io
 import psutil
 import glob
+import re
 
 
 logfile_timestamp_format = "%Y%m%d%H%M%S"
@@ -27,7 +28,6 @@ def getLogger():
         fmt="[%(asctime)s %(name)s %(levelname)s] %(message)s",
         datefmt=log_timestamp_format,
     )
-    logging.basicConfig(level=level)
     logger = logging.getLogger(name)
     dt = datetime.datetime.now().strftime(logfile_timestamp_format)
     log_filename = f"logs/{name}_{dt}.log"
@@ -36,6 +36,7 @@ def getLogger():
     handler = logging.FileHandler(log_filename, "a")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+    logger.setLevel(level)
     return logger
 
 
@@ -312,3 +313,7 @@ def already_finished():
 def row_to_datetime(row):
     return datetime.datetime.fromtimestamp(int(row["t"]) // 1000)
     
+def price_to_float(x):
+    x = re.sub(r"^[^0-9]","",x)
+    x = re.sub(r"[^0-9]$","",x)
+    return float(x)

@@ -95,24 +95,20 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
 
         for worker_id, worker in enumerate(workers):
             out, err = worker.communicate()
-            errcode = worker.returncode
             common.log_error(err)
             common.log(out)
-            if errcode == 0:
-                try:
-                    score = None
-                    for line in out.split(b"\n"):
-                        line = line.strip()
-                        if line.startswith(b"score: "):
-                            score = float(line.split(b":")[1])
-                            break
-                except ValueError:
-                    score = None
-            else:
+            try:
+                score = None
+                for line in out.split(b"\n"):
+                    line = line.strip()
+                    if line.startswith(b"score: "):
+                        score = float(line.split(b" ")[1])
+                        break
+            except ValueError:
                 score = None
             scores[worker_id] = score
 
-        common.log(scores)
+        common.log("Scores:", scores)
         best_worker = None
         best_score = None
         for worker_i, score in enumerate(scores):

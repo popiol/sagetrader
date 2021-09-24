@@ -246,7 +246,7 @@ class StocksRTSimulator(StocksSimulator):
                     if dt > self.dt:
                         bar = {}
                         for key in self.bar_header:
-                            bar[key] = float(row[key])
+                            bar[key] = common.price_to_float(row[key])
                         self.bars[conid] = bar
                         break
         if self.rt_data is None:
@@ -275,9 +275,9 @@ class StocksRTSimulator(StocksSimulator):
                             first_price = row[self.rt_header["price"]]
                         last_price = row[self.rt_header["price"]]
                         volume = row[self.rt_header["volume"]]
-                first_price = float(first_price)
-                last_price = float(last_price)
-                volume = float(volume)
+                first_price = common.price_to_float(first_price)
+                last_price = common.price_to_float(last_price)
+                volume = common.price_to_float(volume)
                 if conid in self.bars:
                     self.rt_scale[conid] = self.bars[conid]["o"] / first_price
                     self.rt_shift[conid] = (
@@ -297,7 +297,7 @@ class StocksRTSimulator(StocksSimulator):
             conid, row, hour, complete = next(self.rt_iter)
             rt = []
             for key, val in self.rt_header.items():
-                x = float(row[val])
+                x = common.price_to_float(row[val])
                 if key in ["price", "ask", "bid"]:
                     x *= self.rt_scale[conid]
                     x += complete * self.rt_shift[conid]
@@ -354,7 +354,7 @@ class StocksRTSimulator(StocksSimulator):
                     conid = row["conid"]
                     bar = []
                     for key in self.bar_header:
-                        bar.append(float(row[key]))
+                        bar.append(common.price_to_float(row[key]))
                     if conid in self.prices:
                         self.prices[conid].append(bar)
                         self.timestamps[conid].append(dt.strftime(self.DT_FORMAT))
