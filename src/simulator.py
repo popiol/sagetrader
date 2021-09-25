@@ -164,6 +164,7 @@ class StocksSimulator(gym.Env):
             common.log("capital:", self.capital, ", reward:", self.total_reward)
         reward = self.capital / self.cash_init - 1
         if self.capital > 20000:
+            common.log("dt:", self.dt)
             common.log("capital:", self.capital)
             common.log("portfolio:", self.portfolio)
             common.log("cash:", self.cash)
