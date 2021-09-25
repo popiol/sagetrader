@@ -47,7 +47,7 @@ class StocksSimulator(gym.Env):
         self.orders = {}
         self.company = None
         self.cash = self.cash_init
-        self.capital = self.get_capital()
+        self.capital = self.cash
         self.watchlist = []
         self.state = self._reset()
         self.total_reward = 0
@@ -158,11 +158,14 @@ class StocksSimulator(gym.Env):
         self.state = self.next_state()
         if self.state is None:
             self.done = True
-        prev_capital = self.capital
         self.capital = self.get_capital()
         if self.done:
             common.log("capital:", self.capital, ", reward:", self.total_reward)
-        reward = self.capital / prev_capital - 1
+        reward = self.capital / self.cash_init - 1
+        if self.capital > 20000:
+            print("capital:", self.capital)
+            print("portfolio:", self.portfolio)
+            print("cash:", self.cash)
         self.total_reward += reward
         return (
             self.state,
@@ -216,6 +219,7 @@ class StocksRTSimulator(StocksSimulator):
         self.comp_iter = None
         self.rt_data = None
         self.bars = None
+        self.rt_prices = {}
         while self.next_state() is not None:
             pass
         self.stop_before = None
