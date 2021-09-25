@@ -137,9 +137,11 @@ class CustomAgent:
                 1,
                 round((total - self.avg_total + 1) / (abs(self.avg_total) + 1) - 1000),
             )
-            print("nit:", nit)
+            common.log("nit:", nit)
             for _ in range(nit):
+                common.log("hist size:", len(hist_set["train_x"]))
                 self.fit(self.hist_model, hist_set["train_x"], hist_set["train_y"])
+                common.log("rt size:", len(rt_set["train_x"]))
                 self.fit(self.rt_model, rt_set["train_x"], rt_set["train_y"])
             self.fitted = True
             self.explore = max(0.3, self.explore * 0.9999)
