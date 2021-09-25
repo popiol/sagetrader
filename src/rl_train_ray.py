@@ -95,7 +95,6 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
 
         for worker_id, worker in enumerate(workers):
             out, err = worker.communicate()
-            common.log_error(err)
             common.log(out)
             try:
                 score = None

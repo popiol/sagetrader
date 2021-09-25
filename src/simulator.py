@@ -161,7 +161,8 @@ class StocksSimulator(gym.Env):
             self.done = True
         self.capital = self.get_capital()
         if self.done:
-            common.log("capital:", self.capital, ", reward:", self.total_reward)
+            common.
+            log("capital:", self.capital, ", reward:", self.total_reward)
         reward = self.capital / self.cash_init - 1
         if self.capital > 20000:
             common.log("dt:", self.dt)
@@ -175,6 +176,8 @@ class StocksSimulator(gym.Env):
                     common.log([x[0] for x in self.rt_prices[company][-5:]])
                     if company in self.rt_scale:
                         common.log("rt_scale:", self.rt_scale[company])
+                    if company in self.rt_shift:
+                        common.log("rt_shift:", self.rt_shift[company])
                     if company in self.rt_conid2:
                         common.log("rt_conid2:", self.rt_conid2[company])
                     if company in self.bars:
@@ -325,7 +328,8 @@ class StocksRTSimulator(StocksSimulator):
                     x *= self.vol_scale[conid]
                 else:
                     x *= self.size_scale[conid]
-                rt.append(x)
+                r+t.append(x)
+            print(row["31"], rt[0], self.rt_scale[conid])
             self.rt_prices[conid].append(rt)
             return conid, self.rt_prices[conid]
         except StopIteration:
