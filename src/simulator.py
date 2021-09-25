@@ -175,6 +175,8 @@ class StocksSimulator(gym.Env):
                     common.log([x[0] for x in self.rt_prices[company][-5:]])
                     if company in self.rt_scale:
                         common.log("rt_scale:", self.rt_scale[company])
+                    if company in self.rt_shift:
+                        common.log("rt_shift:", self.rt_shift[company])
                     if company in self.bars:
                         common.log("bars:", self.bars[company])
         self.total_reward += reward
@@ -294,6 +296,7 @@ class StocksRTSimulator(StocksSimulator):
                 last_price = common.price_to_float(last_price)
                 volume = common.price_to_float(volume)
                 if conid in self.bars:
+                    print("bars")
                     self.rt_scale[conid] = self.bars[conid]["o"] / first_price
                     self.rt_shift[conid] = (
                         self.bars[conid]["c"] - last_price * self.rt_scale[conid]
@@ -333,7 +336,7 @@ class StocksRTSimulator(StocksSimulator):
         if self.comp_iter is not None:
             try:
                 conid, prices = next(self.comp_iter)
-                self.eod = (conid == self.last_hist_conid)
+                self.eod = conid == self.last_hist_conid
                 return conid, prices
             except StopIteration:
                 self.comp_iter = None
