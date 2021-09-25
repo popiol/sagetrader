@@ -108,6 +108,7 @@ class StocksSimulator(gym.Env):
         capital = self.cash
         for company, item in self.portfolio.items():
             price = self.get_current_price(company)
+            item["last_price"] = price
             capital += item["n_shares"] * price
         return capital
 
