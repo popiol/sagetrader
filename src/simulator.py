@@ -175,8 +175,8 @@ class StocksSimulator(gym.Env):
                     common.log([x[0] for x in self.rt_prices[company][-5:]])
                     if company in self.rt_scale:
                         common.log("rt_scale:", self.rt_scale[company])
-                    if company in self.rt_shift:
-                        common.log("rt_shift:", self.rt_shift[company])
+                    if company in self.rt_conid2:
+                        common.log("rt_conid2:", self.rt_conid2[company])
                     if company in self.bars:
                         common.log("bars:", self.bars[company])
         self.total_reward += reward
@@ -273,6 +273,7 @@ class StocksRTSimulator(StocksSimulator):
             self.rt_shift = {}
             self.vol_scale = {}
             self.size_scale = {}
+            self.rt_conid2 = {}
             for conid in self.watchlist:
                 self.rt_prices[conid] = []
                 filename = common.find_random_rt_quotes()
@@ -281,6 +282,7 @@ class StocksRTSimulator(StocksSimulator):
                     data = list(reader)
                 row = random.choice(data)
                 conidex = row["conidex"]
+                self.rt_conid2[conid] = conidex
                 first_price = None
                 for row_i, row in enumerate(data):
                     if row["conidex"] == conidex:
