@@ -62,10 +62,10 @@ class CustomAgent:
 
     def predict_action(self, x):
         if self.env.last_event_type == self.env.HIST_EVENT:
-            confidence = self.hist_model.predict_on_batch(np.array(x).astype(np.float32))[0]
+            confidence = self.hist_model.predict_on_batch(np.array([x]).astype(np.float32))[0][0]
             action = [confidence, 0.5, 0.5]
         else:
-            buy_price, sell_price = self.rt_model.predict_on_batch(np.array(x).astype(np.float32))[0]
+            buy_price, sell_price = self.rt_model.predict_on_batch(np.array([x]).astype(np.float32))[0]
             action = [0, buy_price, sell_price]
         if type(self.env.action_space) == Discrete:
             if np.shape(action) == (1,):
@@ -120,7 +120,7 @@ class CustomAgent:
             if (train and random.random() < self.explore) or not self.fitted:
                 action = self.env.action_space.sample()
             else:
-                action = self.predict_action([x])
+                action = self.predict_action(x)
             if train:
                 y = self.transform_y(action)
                 trainset["train_x"].append(x)
