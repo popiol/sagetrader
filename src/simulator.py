@@ -168,6 +168,10 @@ class StocksSimulator(gym.Env):
             common.log("capital:", self.capital)
             common.log("portfolio:", self.portfolio)
             common.log("cash:", self.cash)
+            for company in self.portfolio:
+                print([x[0] for x in self.prices[company][-3:]])
+                print([x[0] for x in self.rt_prices[company][:5]])
+                print([x[0] for x in self.rt_prices[company][-5:]])
         self.total_reward += reward
         return (
             self.state,
