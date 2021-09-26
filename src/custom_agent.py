@@ -19,7 +19,8 @@ class CustomAgent:
         self.hist_model = self.create_hist_model()
         self.rt_model = self.create_rt_model()
         self.avg_reward = 0
-        self.avg_total = 0
+        self.avg_total = None
+        self.std_total = None
         self.max_total = None
         self.explore = 1
         self.fitted = False
@@ -130,18 +131,18 @@ class CustomAgent:
             self.avg_reward = self.avg_reward * 0.99 + reward * 0.01
             if done:
                 break
-        self.avg_total = self.avg_total * 0.9 + total * 0.1
-        if train and total > self.avg_total + 0 * abs(self.avg_total):
+        self.std_total = self.std_total * 0.9 + abs(total - self.avg_total) * 0.1 if self.avg_total is not None else 0
+        self.avg_total = self.avg_total * 0.9 + total * 0.1 if self.avg_total is not None else total
+        common.log(train, total, self.avg_total, self.std_total)
+        if train and total > self.avg_total + 2 * self.std_total:
             common.log("Fit")
             nit = max(
                 1,
-                round((total - self.avg_total + 1) / (abs(self.avg_total) + 1) - 1000),
+                round((total - self.avg_total + 1) / (self.std_total + 1) - 10),
             )
             common.log("nit:", nit)
             for _ in range(nit):
-                common.log("hist size:", len(hist_set["train_x"]))
                 self.fit(self.hist_model, hist_set["train_x"], hist_set["train_y"])
-                common.log("rt size:", len(rt_set["train_x"]))
                 self.fit(self.rt_model, rt_set["train_x"], rt_set["train_y"])
             self.fitted = True
             self.explore = max(0.3, self.explore * 0.9999)
@@ -161,6 +162,8 @@ class CustomAgent:
             self.avg_reward,
             ", avg total:",
             self.avg_total,
+            ", std total:",
+            self.std_total,
             "max:",
             self.max_total,
             "explore:",
@@ -199,6 +202,8 @@ class CustomAgent:
         self.best_score = state["best_score"]
         self.explore = state["explore"]
         self.fitted = state["fitted"]
+        self.avg_total = state["avg_total"]
+        self.std_total = state["std_total"]
 
     def save_checkpoint(self, checkpoint_dir: str = None) -> str:
         if checkpoint_dir is None:

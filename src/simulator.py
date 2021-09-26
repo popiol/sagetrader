@@ -179,6 +179,9 @@ class StocksSimulator(gym.Env):
                         common.log("rt_shift:", self.rt_shift[company])
                     if company in self.rt_conid2:
                         common.log("rt_conid2:", self.rt_conid2[company])
+                    for conid, row, hour, complete in self.rt_data:
+                        if conid == company:
+                            print(row)
                     if company in self.bars:
                         common.log("bars:", self.bars[company])
         self.total_reward += reward
