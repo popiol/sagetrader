@@ -94,7 +94,7 @@ class CustomAgent:
         if self.env.last_event_type == self.env.HIST_EVENT:
             return action[0]
         else:
-            return action[1:]
+            return action
 
     def run_episode(self, train=True, live=False):
         stage = (
