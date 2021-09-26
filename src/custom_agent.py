@@ -194,6 +194,8 @@ class CustomAgent:
             "best_score": self.best_score,
             "explore": self.explore,
             "fitted": self.fitted,
+            "avg_total": self.avg_total,
+            "std_total": self.std_total,
         }
 
     def __setstate__(self, state: dict):
@@ -202,8 +204,8 @@ class CustomAgent:
         self.best_score = state["best_score"]
         self.explore = state["explore"]
         self.fitted = state["fitted"]
-        self.avg_total = state["avg_total"]
-        self.std_total = state["std_total"]
+        self.avg_total = state.get("avg_total")
+        self.std_total = state.get("std_total")
 
     def save_checkpoint(self, checkpoint_dir: str = None) -> str:
         if checkpoint_dir is None:
