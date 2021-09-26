@@ -134,7 +134,7 @@ class CustomAgent:
         self.std_total = self.std_total * 0.9 + abs(total - self.avg_total) * 0.1 if self.avg_total is not None else 0
         self.avg_total = self.avg_total * 0.9 + total * 0.1 if self.avg_total is not None else total
         common.log(train, total, self.avg_total, self.std_total)
-        if train and total > self.avg_total + 2 * self.std_total:
+        if train and total > self.avg_total + self.std_total:
             common.log("Fit")
             nit = max(
                 1,
