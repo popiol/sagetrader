@@ -28,6 +28,7 @@ class CustomAgent:
         self.model_dir = "data"
         self.model_changed = False
         self.worker_id = worker_id
+        self.confidences = {}
 
     def create_hist_model(self):
         inputs = keras.layers.Input(shape=(self.max_quotes,5))
@@ -53,7 +54,7 @@ class CustomAgent:
         l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
-        outputs = keras.layers.Dense(2, activation="sigmoid")(l)
+        outputs = keras.layers.Dense(3, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
             optimizer=keras.optimizers.Nadam(learning_rate=0.001),
@@ -65,9 +66,11 @@ class CustomAgent:
         if self.env.last_event_type == self.env.HIST_EVENT:
             confidence = self.hist_model.predict_on_batch(np.array([x]).astype(np.float32))[0][0]
             action = [confidence, 0.5, 0.5]
+            self.confidences[self.env.company] = confidence
         else:
-            buy_price, sell_price = self.rt_model.predict_on_batch(np.array([x]).astype(np.float32))[0]
-            action = [0, buy_price, sell_price]
+            confidence, buy_price, sell_price = self.rt_model.predict_on_batch(np.array([x]).astype(np.float32))[0]
+            confidence = (confidence + self.confidences[self.env.company]) / 2
+            action = [confidence, buy_price, sell_price]
         if type(self.env.action_space) == Discrete:
             if np.shape(action) == (1,):
                 action = action[0]
