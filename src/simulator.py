@@ -300,7 +300,6 @@ class StocksRTSimulator(StocksSimulator):
                 last_price = common.price_to_float(last_price)
                 volume = common.price_to_float(volume)
                 if conid in self.bars:
-                    print("bars")
                     self.rt_scale[conid] = self.bars[conid]["o"] / first_price
                     self.rt_shift[conid] = (
                         self.bars[conid]["c"] - last_price * self.rt_scale[conid]
@@ -328,7 +327,6 @@ class StocksRTSimulator(StocksSimulator):
                 else:
                     x *= self.size_scale[conid]
                 rt.append(x)
-            print(row["31"], rt[0], self.rt_scale[conid])
             self.rt_prices[conid].append(rt)
             return conid, self.rt_prices[conid]
         except StopIteration:
@@ -356,6 +354,7 @@ class StocksRTSimulator(StocksSimulator):
                     with open(filename, "r") as f:
                         reader = csv.DictReader(f)
                         self.data.extend(list(reader))
+                self.data.sort(key=lambda x: x["t"])
                 self.month_loaded = month_to_load
             closest_dt = None
             for row in self.data:
