@@ -69,7 +69,7 @@ class CustomAgent:
             self.confidences[self.env.company] = confidence
         else:
             confidence, buy_price, sell_price = self.rt_model.predict_on_batch(np.array([x]).astype(np.float32))[0]
-            confidence = (confidence + self.confidences[self.env.company]) / 2
+            confidence = (confidence + self.confidences.get(self.env.company, confidence)) / 2
             action = [confidence, buy_price, sell_price]
         if type(self.env.action_space) == Discrete:
             if np.shape(action) == (1,):
