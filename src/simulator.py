@@ -127,7 +127,7 @@ class StocksSimulator(gym.Env):
         if self.steps > self.max_steps:
             self.done = True
         self.handle_orders()
-        confidence = action[0]
+        confidence = action[0] - action[1]
         rel_buy_price = self.relative_price_decode(action[1])
         rel_sell_price = self.relative_price_decode(action[2])
 
