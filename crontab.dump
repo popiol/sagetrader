@@ -3,5 +3,10 @@
 */30 14-23 * * 1-5 cd /usr/bin/sagetrader; python3 src/lynx_rt_data.py
 13,43 6-8 * * 6 cd /usr/bin/sagetrader; python3 src/lynx_company_list.py
 13,43 10-11 * * 6 cd /usr/bin/sagetrader; python3 src/lynx_hist_data_init.py
+55 23 * * 5 /usr/bin/docker stop ibeam
+
 13 6 * * 7 cd /usr/bin/sagetrader; find logs/*.log -mtime +7 -exec rm {} \;
+13 5 * * * cd /usr/bin/sagetrader; find logs/rl_train_ray*.log -mtime +0 -exec rm {} \;
+
+*/5 * * * * cd /usr/bin/sagetrader; python3 src/rl_train_ray.py
 
