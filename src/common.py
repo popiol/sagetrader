@@ -230,7 +230,7 @@ def find_random_rt_quotes():
         files = glob.glob(path + "/*")
         last_file = max(files)
         files = [x for x in files if x != last_file]
-        path = random.choice()
+        path = random.choice(files)
     return path
 
 
