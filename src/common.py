@@ -229,7 +229,8 @@ def find_random_rt_quotes():
     while not path.endswith(".csv"):
         files = glob.glob(path + "/*")
         last_file = max(files)
-        files = [x for x in files if x != last_file]
+        if last_file.endswith(".csv"):
+            files = [x for x in files if x != last_file]
         path = random.choice(files)
     return path
 
