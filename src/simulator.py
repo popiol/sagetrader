@@ -237,7 +237,7 @@ class StocksRTSimulator(StocksSimulator):
             dt1 += datetime.timedelta(days=shift)
             dt2 = dt1 + datetime.timedelta(days=360)
         else:
-            dt2 = datetime.datetime.now() - datetime.timedelta(days=self.max_steps)
+            dt2 = datetime.datetime.now() - datetime.timedelta(days=self.max_steps//300)
             dt1 = dt2 - datetime.timedelta(days=360)
         common.log("Start on:", dt1.strftime(self.DT_FORMAT))
         self.dt = dt1
