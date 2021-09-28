@@ -141,7 +141,7 @@ class CustomAgent:
             common.log("Fit")
             nit = max(
                 1,
-                round((total - self.avg_total + 1) / (self.std_total + 1) - 10),
+                round((total - self.avg_total + 1) / (self.std_total + 1)),
             )
             common.log("nit:", nit)
             for _ in range(nit):
