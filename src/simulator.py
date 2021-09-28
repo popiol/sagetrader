@@ -51,6 +51,8 @@ class StocksSimulator(gym.Env):
         self.watchlist = []
         self.state = self._reset()
         self.total_reward = 0
+        self.n_bought = 0
+        self.n_sold = 0
         return self.state
 
     def next_state(self):
@@ -82,9 +84,11 @@ class StocksSimulator(gym.Env):
                     "purchase_price": order["limit"],
                 }
                 complete = True
+                self.n_bought += 1
             elif not order["buy"] and order["limit"] < price:
                 del self.portfolio[company]
                 complete = True
+                self.n_sold += 1
             if complete:
                 val = order["n_shares"] * order["limit"]
                 self.cash -= val * (1 if order["buy"] else -1) + self.provision * val

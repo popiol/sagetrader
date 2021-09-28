@@ -26,6 +26,7 @@ def main():
         agent.load_checkpoint(agent_file)
     score = agent.evaluate()
     common.log("Score:", score)
+    common.log("Bought:", agent.env.n_bought, "Sold:", agent.env.n_sold)
 
     timestamp2 = time.time()
     common.log("Execution time:", timestamp2 - timestamp1)
