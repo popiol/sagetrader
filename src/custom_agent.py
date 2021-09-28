@@ -221,3 +221,7 @@ class CustomAgent:
     def load_checkpoint(self, checkpoint_path: str):
         extra_data = pickle.load(open(checkpoint_path, "rb"))
         self.__setstate__(extra_data)
+        for layer in self.hist_model.layers:
+            common.log(layer.get_weights())
+        for layer in self.rt_model.layers:
+            common.log(layer.get_weights())
