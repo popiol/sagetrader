@@ -165,6 +165,7 @@ class StocksSimulator(gym.Env):
             self.done = True
         self.capital = self.get_capital()
         if self.done:
+            common.log("Finish on:", self.dt.strftime(self.DT_FORMAT))
             common.log("capital:", self.capital, ", reward:", self.total_reward)
         reward = self.capital / self.cash_init - 1
         if self.capital > 20000:
@@ -227,7 +228,7 @@ class StocksRTSimulator(StocksSimulator):
         if self.stage == self.PREDICTION:
             dt1 = datetime.datetime.now() - datetime.timedelta(years=1)
             dt2 = datetime.datetime.now()
-        else:
+        elif self.stage == self.TRAINING:
             dt1 = datetime.datetime.strptime("20170901", "%Y%m%d")
             dt2 = datetime.datetime.now()
             diff = (dt2 - dt1).days
@@ -235,6 +236,10 @@ class StocksRTSimulator(StocksSimulator):
             shift = random.randrange(diff - l)
             dt1 += datetime.timedelta(days=shift)
             dt2 = dt1 + datetime.timedelta(days=360)
+        else:
+            dt2 = datetime.datetime.now() - datetime.timedelta(days=self.max_steps)
+            dt1 = dt2 - datetime.timedelta(days=360)
+        common.log("Start on:", dt1.strftime(self.DT_FORMAT))
         self.dt = dt1
         self.stop_before = dt2
         self.month_loaded = None

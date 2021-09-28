@@ -227,7 +227,10 @@ def find_hist_quotes(year, month):
 def find_random_rt_quotes():
     path = rt_quotes_filename.split("{")[0]
     while not path.endswith(".csv"):
-        path = random.choice(glob.glob(path + "/*"))
+        files = glob.glob(path + "/*")
+        last_file = max(files)
+        files = [x for x in files if x != last_file]
+        path = random.choice()
     return path
 
 

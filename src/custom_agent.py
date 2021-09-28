@@ -29,6 +29,7 @@ class CustomAgent:
         self.model_changed = False
         self.worker_id = worker_id
         self.confidences = {}
+        self.niter = 0
 
     def create_hist_model(self):
         inputs = keras.layers.Input(shape=(self.max_quotes,5))
