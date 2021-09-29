@@ -33,7 +33,7 @@ class StocksSimulator(gym.Env):
         self.provision = 0.001
         self.min_transaction_value = 1000.0
         self.last_event_type = None
-        self.reset()
+        #self.reset()
 
     def _reset(self):
         return []
@@ -131,7 +131,7 @@ class StocksSimulator(gym.Env):
         if self.steps > self.max_steps:
             self.done = True
         self.handle_orders()
-        confidence = action[0] - action[1]
+        confidence = action[0]
         rel_buy_price = self.relative_price_decode(action[1])
         rel_sell_price = self.relative_price_decode(action[2])
 
@@ -186,7 +186,7 @@ class StocksSimulator(gym.Env):
                         common.log("rt_conid2:", self.rt_conid2[company])
                     for conid, row, hour, complete in self.rt_data:
                         if conid == company:
-                            print(row)
+                            common.log(row)
                     if company in self.bars:
                         common.log("bars:", self.bars[company])
         self.total_reward += reward

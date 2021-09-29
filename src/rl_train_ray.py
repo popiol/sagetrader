@@ -45,7 +45,6 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
         )
         if os.path.isfile(agent_file):
             agent.load_checkpoint(agent_file)
-            common.log("loaded")
         agent.train()
         score = agent.evaluate(quick=True)
         print("score:", score)

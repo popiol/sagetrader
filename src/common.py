@@ -45,8 +45,6 @@ logger = getLogger()
 
 
 def log(*x, level=logging.INFO):
-    if not x or (len(x) == 1 and not x[0]):
-        return
     f = io.StringIO()
     print(*x, file=f)
     logger.log(level, f.getvalue().strip())

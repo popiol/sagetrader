@@ -6,6 +6,7 @@ import tensorflow.keras as keras
 import pickle
 import common
 from tensorflow import saved_model
+import math
 
 
 class CustomAgent:
@@ -32,7 +33,7 @@ class CustomAgent:
         self.niter = 0
 
     def create_hist_model(self):
-        inputs = keras.layers.Input(shape=(self.max_quotes,5))
+        inputs = keras.layers.Input(shape=(self.max_quotes, 5))
         l = inputs
         l = keras.layers.LSTM(self.max_quotes)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
@@ -48,7 +49,7 @@ class CustomAgent:
         return model
 
     def create_rt_model(self):
-        inputs = keras.layers.Input(shape=(self.max_quotes,6))
+        inputs = keras.layers.Input(shape=(self.max_quotes, 6))
         l = inputs
         l = keras.layers.LSTM(self.max_quotes)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
@@ -65,22 +66,33 @@ class CustomAgent:
 
     def predict_action(self, x):
         if self.env.last_event_type == self.env.HIST_EVENT:
-            confidence = self.hist_model.predict_on_batch(np.array([x]).astype(np.float32))[0][0]
+            confidence = self.hist_model.predict_on_batch(
+                np.array([x]).astype(np.float32)
+            )[0][0]
             action = [confidence, 0.5, 0.5]
             self.confidences[self.env.company] = confidence
         else:
-            confidence, buy_price, sell_price = self.rt_model.predict_on_batch(np.array([x]).astype(np.float32))[0]
-            confidence = (confidence + self.confidences.get(self.env.company, confidence)) / 2
+            confidence, buy_price, sell_price = self.rt_model.predict_on_batch(
+                np.array([x]).astype(np.float32)
+            )[0]
+            confidence = (
+                confidence + self.confidences.get(self.env.company, confidence)
+            ) / 2
             action = [confidence, buy_price, sell_price]
-        if type(self.env.action_space) == Discrete:
-            if np.shape(action) == (1,):
-                action = action[0]
-            action = round(action)
-            action = max(0, action)
-            action = min(self.env.action_space.n - 1, action)
         return action
 
     def fit(self, model, x, y):
+        for action_i, action in enumerate(y):
+            if np.isscalar(action):
+                action = [action]
+            for val_i, val in enumerate(action):
+                action[val_i] = (
+                    math.pow(val, 1 + self.explore)
+                    if val < 0.5
+                    else math.pow(val, 1 - self.explore * 0.5)
+                )
+            if np.shape(action) == (1,):
+                y[action_i] = action[0]
         model.fit(
             np.array(x).astype(np.float32),
             np.array(y).astype(np.float32),
@@ -122,10 +134,13 @@ class CustomAgent:
                 trainset = hist_set
             else:
                 trainset = rt_set
-            if (train and random.random() < self.explore) or not self.fitted:
-                action = self.env.action_space.sample()
-            else:
+            if self.fitted:
                 action = self.predict_action(x)
+            else:
+                action = self.env.action_space.sample()
+            if train:
+                for val_i, val in enumerate(action):
+                    action[val_i] = min(1, max(0, val + random.gauss(0, 0.2)))
             if train:
                 y = self.transform_y(action)
                 trainset["train_x"].append(x)
@@ -135,8 +150,14 @@ class CustomAgent:
             self.avg_reward = self.avg_reward * 0.99 + reward * 0.01
             if done:
                 break
-        self.std_total = self.std_total * 0.9 + abs(total - self.avg_total) * 0.1 if self.avg_total is not None else 0
-        self.avg_total = self.avg_total * 0.9 + total * 0.1 if self.avg_total is not None else total
+        self.std_total = (
+            self.std_total * 0.9 + abs(total - self.avg_total) * 0.1
+            if self.avg_total is not None
+            else 0
+        )
+        self.avg_total = (
+            self.avg_total * 0.9 + total * 0.1 if self.avg_total is not None else total
+        )
         common.log(train, total, self.avg_total, self.std_total)
         if train and total > self.avg_total + self.std_total:
             common.log("Fit")
@@ -144,6 +165,7 @@ class CustomAgent:
                 1,
                 round((total - self.avg_total + 1) / (self.std_total + 1)),
             )
+            nit = 1
             common.log("nit:", nit)
             for _ in range(nit):
                 self.fit(self.hist_model, hist_set["train_x"], hist_set["train_y"])
@@ -188,10 +210,14 @@ class CustomAgent:
 
     def __getstate__(self) -> dict:
         keras.models.save_model(
-            self.hist_model, f"{self.model_dir}/hist_model-{self.worker_id}.h5", save_format="h5"
+            self.hist_model,
+            f"{self.model_dir}/hist_model-{self.worker_id}.h5",
+            save_format="h5",
         )
         keras.models.save_model(
-            self.rt_model, f"{self.model_dir}/rt_model-{self.worker_id}.h5", save_format="h5"
+            self.rt_model,
+            f"{self.model_dir}/rt_model-{self.worker_id}.h5",
+            save_format="h5",
         )
         return {
             "best_score": self.best_score,
@@ -202,8 +228,12 @@ class CustomAgent:
         }
 
     def __setstate__(self, state: dict):
-        self.hist_model = keras.models.load_model(f"{self.model_dir}/hist_model.h5")
-        self.rt_model = keras.models.load_model(f"{self.model_dir}/rt_model.h5")
+        self.hist_model = keras.models.load_model(
+            f"{self.model_dir}/hist_model.h5", compile=True
+        )
+        self.rt_model = keras.models.load_model(
+            f"{self.model_dir}/rt_model.h5", compile=True
+        )
         self.best_score = state["best_score"]
         self.explore = state["explore"]
         self.fitted = state["fitted"]
