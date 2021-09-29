@@ -89,7 +89,7 @@ class CustomAgent:
                 action[val_i] = (
                     math.pow(val, 1 + self.explore)
                     if val < 0.5
-                    else math.pow(val, 1 - self.explore * 0.5)
+                    else math.pow(val, 1 - self.explore * 0.7)
                 )
             if np.shape(action) == (1,):
                 y[action_i] = action[0]
