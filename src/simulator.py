@@ -143,6 +143,7 @@ class StocksSimulator(gym.Env):
             if (
                 len(self.watchlist) < self.watchlist_size
                 and confidence > self.confidence_th
+                and self.company not in self.watchlist
             ):
                 self.watchlist.append(self.company)
 
@@ -172,8 +173,10 @@ class StocksSimulator(gym.Env):
             common.log("dt:", self.dt)
             common.log("capital:", self.capital)
             common.log("portfolio:", self.portfolio)
+            common.log("watchlist:", self.watchlist)
             common.log("cash:", self.cash)
             for company in self.portfolio:
+                common.log("company:", company)
                 if company in self.rt_prices:
                     common.log([x[0] for x in self.prices[company][-3:]])
                     common.log([x[0] for x in self.rt_prices[company][:5]])
