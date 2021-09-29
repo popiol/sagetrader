@@ -138,7 +138,7 @@ class CustomAgent:
                 action = self.predict_action(x)
             else:
                 action = self.env.action_space.sample()
-            if train:
+            if train and random.random() < self.explore:
                 for val_i, val in enumerate(action):
                     action[val_i] = min(1, max(0, val + random.gauss(0, self.explore * .2)))
             if train:
