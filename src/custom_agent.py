@@ -140,7 +140,7 @@ class CustomAgent:
                 action = self.env.action_space.sample()
             if train and random.random() < self.explore:
                 for val_i, val in enumerate(action):
-                    action[val_i] = min(1, max(0, val + random.gauss(0, self.explore * .2)))
+                    action[val_i] = min(1, max(0, val + random.gauss(0, self.explore * .3)))
             if train:
                 y = self.transform_y(action)
                 trainset["train_x"].append(x)
