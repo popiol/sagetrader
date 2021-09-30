@@ -58,7 +58,7 @@ async def send_session_id(websocket, session_id):
             errorcode = resp["code"]
             raise Exception(errorcode, error)
 
-def main(companies, handler, start_conid=None, if_not_exists=False):
+def main(companies, handler, start_conid=None, if_not_exists=False, remove_incomplete=False):
     n_failures = 0
     skip = start_conid is not None
     for company in companies:
@@ -85,7 +85,7 @@ def main(companies, handler, start_conid=None, if_not_exists=False):
                 if dt2 - dt1 > datetime.timedelta(days=7):
                     common.log("Outdated data exists -- removing")
                     shutil.rmtree(path)
-                elif dt2 - dt0 < datetime.timedelta(days=7):
+                elif dt2 - dt0 < datetime.timedelta(days=7) and remove_incomplete:
                     common.log("Incomplete data exists -- removing")
                     shutil.rmtree(path)
                 elif if_not_exists:

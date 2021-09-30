@@ -8,7 +8,7 @@ import random
 import time
 
 
-def main(period="2d", append=True, start_conid=None, if_not_exists=False):
+def main(period="2d", append=True, start_conid=None, if_not_exists=False, remove_incomplete=False):
     session_id = lynx_common.get_session_id()
 
     async def handler(company):
@@ -71,7 +71,7 @@ def main(period="2d", append=True, start_conid=None, if_not_exists=False):
 
     companies = common.load_comp_list()
     random.shuffle(companies)
-    lynx_common.main(companies, handler, start_conid, if_not_exists)
+    lynx_common.main(companies, handler, start_conid, if_not_exists, remove_incomplete)
 
 if __name__ == "__main__":
     if common.already_running():
