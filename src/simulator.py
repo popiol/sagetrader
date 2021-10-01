@@ -53,6 +53,7 @@ class StocksSimulator(gym.Env):
         self.total_reward = 0
         self.n_bought = 0
         self.n_sold = 0
+        self.transactions = []
         return self.state
 
     def next_state(self):
@@ -65,30 +66,45 @@ class StocksSimulator(gym.Env):
         :param buy: True for buy order, False for sell order
         :param rel_limit: the price limit relative to the current price
         """
+        common.log_debug("place order:", company, n_shares, buy, rel_limit)
         limit = round(self.get_current_price(company) * (1 + rel_limit), 2)
         self.orders[company] = {"n_shares": n_shares, "buy": buy, "limit": limit}
 
     def handle_orders(self):
         orders = {}
         for company, order in self.orders.items():
-            price = self.get_current_price(company)
-            timestamp = self.timestamps[company][-1]
-            if "timestamp" not in order:
-                order["timestamp"] = timestamp
-            elif order["timestamp"].split()[0] < timestamp.split()[0]:
+            if order["order_dt"] >= self.dt:
+                continue
+            if "session_dt" not in order:
+                order["session_dt"] = self.dt.date()
+            elif order["session_dt"] < self.dt.date():
                 break
             complete = False
+            price = self.get_current_price(company)
             if order["buy"] and order["limit"] > price:
                 self.portfolio[company] = {
                     "n_shares": order["n_shares"],
                     "purchase_price": order["limit"],
                 }
+                order["company"] = company
+                order["buy_dt"] = self.dt
+                self.transactions.append(order)
                 complete = True
                 self.n_bought += 1
+                common.log_debug("buy:", order)
             elif not order["buy"] and order["limit"] < price:
                 del self.portfolio[company]
+                for trans in reversed(self.transactions):
+                    if trans["company"] == company:
+                        order["buy_transaction"] = trans
+                        order["profit_percent"] = order["limit"] / trans["limit"] - 1
+                        break
+                order["company"] = company
+                order["sell_dt"] = self.dt
+                self.transactions.append(order)
                 complete = True
                 self.n_sold += 1
+                common.log_debug("sell:", order)
             if complete:
                 val = order["n_shares"] * order["limit"]
                 self.cash -= val * (1 if order["buy"] else -1) + self.provision * val
@@ -132,8 +148,8 @@ class StocksSimulator(gym.Env):
             self.done = True
         self.handle_orders()
         confidence = action[0]
-        rel_buy_price = self.relative_price_decode(action[1])
-        rel_sell_price = self.relative_price_decode(action[2])
+        rel_buy_price = self.relative_price_decode(action[1] - .2)
+        rel_sell_price = self.relative_price_decode(action[2] + .2)
 
         if self.last_event_type == self.HIST_EVENT:
             self.watchlist = []
@@ -343,6 +359,7 @@ class StocksRTSimulator(StocksSimulator):
                     x *= self.size_scale[conid]
                 rt.append(x)
             self.rt_prices[conid].append(rt)
+            self.dt = self.dt.replace(hour=int(hour[:2]), minute=int(hour[2:4]), second=int(hour[4:]))
             return conid, self.rt_prices[conid]
         except StopIteration:
             self.rt_data = None
@@ -379,6 +396,7 @@ class StocksRTSimulator(StocksSimulator):
                     break
             if closest_dt is None:
                 self.dt = self.dt + datetime.timedelta(days=1)
+                self.dt.replace(hour=0)
                 continue
             else:
                 self.dt = closest_dt

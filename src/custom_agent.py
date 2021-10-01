@@ -71,6 +71,7 @@ class CustomAgent:
             )[0][0]
             action = [confidence, 0.5, 0.5]
             self.confidences[self.env.company] = confidence
+            #common.log("hist pred:", confidence)
         else:
             confidence, buy_price, sell_price = self.rt_model.predict_on_batch(
                 np.array([x]).astype(np.float32)
@@ -79,20 +80,13 @@ class CustomAgent:
                 confidence + self.confidences.get(self.env.company, confidence)
             ) / 2
             action = [confidence, buy_price, sell_price]
+            #common.log("rt pred:", confidence, buy_price, sell_price)
         return action
 
     def fit(self, model, x, y):
-        for action_i, action in enumerate(y):
-            if np.isscalar(action):
-                action = [action]
-            for val_i, val in enumerate(action):
-                action[val_i] = (
-                    math.pow(val, 1 + self.explore)
-                    if val < 0.5
-                    else math.pow(val, 1 - self.explore * 0.7)
-                )
-            if np.shape(action) == (1,):
-                y[action_i] = action[0]
+        common.log("train set size:", len(x))
+        if len(x) == 0:
+            return
         model.fit(
             np.array(x).astype(np.float32),
             np.array(y).astype(np.float32),
@@ -118,12 +112,20 @@ class CustomAgent:
         self.env.stage = stage
         state = self.env.reset()
         hist_set = {
+            "all_x": [],
+            "all_y": [],
             "train_x": [],
             "train_y": [],
+            "company": [],
+            "dt": [],
         }
         rt_set = {
+            "all_x": [],
+            "all_y": [],
             "train_x": [],
             "train_y": [],
+            "company": [],
+            "dt": [],
         }
         total = 0
         max_steps = self.train_max_steps if train else self.validate_max_steps
@@ -140,11 +142,13 @@ class CustomAgent:
                 action = self.env.action_space.sample()
             if train and random.random() < self.explore:
                 for val_i, val in enumerate(action):
-                    action[val_i] = min(1, max(0, val + random.gauss(0, self.explore * .3)))
+                    action[val_i] = min(1, max(0, val + random.gauss(0, self.explore * .2)))
             if train:
                 y = self.transform_y(action)
-                trainset["train_x"].append(x)
-                trainset["train_y"].append(y)
+                trainset["all_x"].append(x)
+                trainset["all_y"].append(y)
+                trainset["company"].append(self.env.company)
+                trainset["dt"].append(self.env.dt)
             state, reward, done, info = self.env.step(action)
             total += reward
             self.avg_reward = self.avg_reward * 0.99 + reward * 0.01
@@ -159,7 +163,7 @@ class CustomAgent:
             self.avg_total * 0.9 + total * 0.1 if self.avg_total is not None else total
         )
         common.log(train, total, self.avg_total, self.std_total)
-        if train and total > self.avg_total + self.std_total:
+        if train: # and total > self.avg_total + self.std_total:
             common.log("Fit")
             nit = max(
                 1,
@@ -167,6 +171,41 @@ class CustomAgent:
             )
             nit = 1
             common.log("nit:", nit)
+            good_bad_trans = []
+            n_good = 0
+            n_bad = 0
+            n_neutral = 0
+            for trans in self.env.transactions:
+                if not trans["buy"] and "profit_percent" in trans:
+                    if trans["profit_percent"] > .01:
+                        good_bad_trans.append((trans, True))
+                        n_good += 1
+                    elif trans["profit_percent"] < 0:
+                        good_bad_trans.append((trans, False))
+                        n_bad += 1
+                    else:
+                        n_neutral += 1
+            common.log("Good:", n_good, "Bad:", n_bad, "Neutral:", n_neutral)
+            for trans, good in good_bad_trans:
+                buy_dt = trans["buy_transaction"]["buy_dt"]
+                buy_dt_trunc = buy_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+                sell_dt = trans["sell_dt"]
+                hist_train_x = None
+                hist_train_y = None
+                for trainset in [hist_set, rt_set]:
+                    for dt, company, x, y in zip(trainset["dt"], trainset["company"], trainset["all_x"], trainset["all_y"]):
+                        if trainset is hist_set and company == trans["company"] and dt < buy_dt:
+                            hist_train_x = x
+                            hist_train_y = int(good)
+                        elif trainset is rt_set and company == trans["company"] and buy_dt_trunc < dt < sell_dt:
+                            trainset["train_x"].append(x)
+                            y = [int(good), y[1], y[2]]
+                            trainset["train_y"].append(y)
+                        elif (trainset is hist_set and dt >= buy_dt) or (trainset is rt_set and dt >= sell_dt):
+                            break
+                if hist_train_x is not None:
+                    hist_set["train_x"].append(hist_train_x)
+                    hist_set["train_y"].append(hist_train_y)
             for _ in range(nit):
                 self.fit(self.hist_model, hist_set["train_x"], hist_set["train_y"])
                 self.fit(self.rt_model, rt_set["train_x"], rt_set["train_y"])
