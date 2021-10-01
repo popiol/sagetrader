@@ -11,7 +11,7 @@ import math
 
 class CustomAgent:
     def __init__(
-        self, env: gym.Env, config: dict = {}, env_config: dict = {}, worker_id=0
+        self, env: gym.Env, config: dict = {}, env_config: dict = {}, worker_id=9
     ):
         self.env = env(env_config)
         self.train_max_steps = self.env.train_max_steps
@@ -299,21 +299,20 @@ class CustomAgent:
         common.log("Current score:", total)
         if self.best_score is None or total >= self.best_score:
             self.best_score = total
-        self.save_checkpoint(self.model_dir, just_agent=(not quick))
+        self.save_checkpoint(self.model_dir)
         return total
 
-    def __getstate__(self, just_agent: bool = False) -> dict:
-        if not just_agent:
-            keras.models.save_model(
-                self.hist_model,
-                f"{self.model_dir}/hist_model-{self.worker_id}.h5",
-                save_format="h5",
-            )
-            keras.models.save_model(
-                self.rt_model,
-                f"{self.model_dir}/rt_model-{self.worker_id}.h5",
-                save_format="h5",
-            )
+    def __getstate__(self) -> dict:
+        keras.models.save_model(
+            self.hist_model,
+            f"{self.model_dir}/hist_model-{self.worker_id}.h5",
+            save_format="h5",
+        )
+        keras.models.save_model(
+            self.rt_model,
+            f"{self.model_dir}/rt_model-{self.worker_id}.h5",
+            save_format="h5",
+        )
         return {
             "best_score": self.best_score,
             "explore": self.explore,
@@ -335,15 +334,11 @@ class CustomAgent:
         self.avg_total = state.get("avg_total")
         self.std_total = state.get("std_total")
 
-    def save_checkpoint(
-        self, checkpoint_dir: str = None, just_agent: bool = False
-    ) -> str:
+    def save_checkpoint(self, checkpoint_dir: str = None) -> str:
         if checkpoint_dir is None:
             checkpoint_dir = self.model_dir
         checkpoint_path = f"{checkpoint_dir}/agent-{self.worker_id}.dat"
-        pickle.dump(
-            self.__getstate__(just_agent=just_agent), open(checkpoint_path, "wb")
-        )
+        pickle.dump(self.__getstate__(), open(checkpoint_path, "wb"))
         self.model_changed = True
         return checkpoint_path
 
