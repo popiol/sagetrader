@@ -199,7 +199,10 @@ class CustomAgent:
                             hist_train_y = int(good)
                         elif trainset is rt_set and company == trans["company"] and buy_dt_trunc < dt < sell_dt:
                             trainset["train_x"].append(x)
-                            y = [int(good), y[1], y[2]]
+                            if good:
+                                y = [1, y[1], y[2]]
+                            else:
+                                y = [0, 1 - y[1], 1 - y[2]]
                             trainset["train_y"].append(y)
                         elif (trainset is hist_set and dt >= buy_dt) or (trainset is rt_set and dt >= sell_dt):
                             break
