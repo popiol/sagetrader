@@ -182,7 +182,7 @@ class StocksSimulator(gym.Env):
             self.done = True
         self.capital = self.get_capital()
         if self.done:
-            common.log("Finish on:", self.dt.strftime(self.DT_FORMAT))
+            common.log("Finish simulation on:", self.dt.strftime(self.DT_FORMAT))
             common.log("capital:", self.capital, ", reward:", self.total_reward)
         reward = self.capital / self.cash_init - 1
         if self.capital > 20000:
@@ -258,8 +258,8 @@ class StocksRTSimulator(StocksSimulator):
         else:
             dt2 = datetime.datetime.now() - datetime.timedelta(days=self.max_steps//300)
             dt1 = dt2 - datetime.timedelta(days=360)
-        common.log("Start on:", dt1.strftime(self.DT_FORMAT))
         self.dt = dt1
+        common.log("Start preparation on:", self.dt.strftime(self.DT_FORMAT))
         self.stop_before = dt2
         self.month_loaded = None
         self.comp_iter = None
@@ -269,6 +269,7 @@ class StocksRTSimulator(StocksSimulator):
         while self.next_state() is not None:
             pass
         self.stop_before = None
+        common.log("Start simulation on:", self.dt.strftime(self.DT_FORMAT))
         return self.next_state()
 
     def next_data(self):

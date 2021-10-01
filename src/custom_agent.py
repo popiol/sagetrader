@@ -132,6 +132,7 @@ class CustomAgent:
         }
         total = 0
         max_steps = self.train_max_steps if train else self.validate_max_steps
+        seed = random.gauss(0, self.explore * .1)
         for _ in range(max_steps + 1):
             self.niter += 1
             x = self.transform_x(state)
@@ -145,7 +146,7 @@ class CustomAgent:
                 action = self.env.action_space.sample()
             if train and random.random() < self.explore:
                 for val_i, val in enumerate(action):
-                    action[val_i] = min(1, max(0, val + random.gauss(0, self.explore * .2)))
+                    action[val_i] = min(1, max(0, val + seed + random.gauss(0, self.explore * .1)))
             if train:
                 y = self.transform_y(action)
                 trainset["all_x"].append(x)
