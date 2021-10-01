@@ -1,3 +1,4 @@
+import datetime
 import gym
 import random
 import numpy as np
@@ -6,7 +7,8 @@ import tensorflow.keras as keras
 import pickle
 import common
 from tensorflow import saved_model
-import math
+import glob
+import shutil
 
 
 class CustomAgent:
@@ -30,7 +32,7 @@ class CustomAgent:
         self.best_score = None
         self.model_dir = "data"
         self.model_changed = False
-        self.worker_id = worker_id
+        self.worker_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         self.confidences = {}
         self.niter = 0
 
@@ -315,6 +317,17 @@ class CustomAgent:
         if self.best_score is None or total >= self.best_score:
             self.best_score = total
         self.save_checkpoint(self.model_dir)
+        if not quick:
+            global_best = None
+            for agent_file in glob.iglob(self.model_dir + "/agent*"):
+                agent_data = pickle.load(open(agent_file, "rb"))
+                if global_best is None or agent_data["best_score"] > global_best:
+                    best_agent = agent_file
+            shutil.copyfile(best_agent, self.model_dir + "/agent-best.dat")
+            hist_model_file = agent_file.replace("agent", "hist_model").replace(".dat", ".h5")
+            shutil.copyfile(hist_model_file, self.model_dir + "/hist_model-best.dat")
+            rt_model_file = agent_file.replace("agent", "rt_model").replace(".dat", ".h5")
+            shutil.copyfile(rt_model_file, self.model_dir + "/rt_model-best.dat")
         return total
 
     def __getstate__(self) -> dict:
