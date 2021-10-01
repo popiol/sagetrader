@@ -216,7 +216,7 @@ class CustomAgent:
                             sell_train_y = y
                         elif (trainset is hist_set and dt >= buy_dt) or (trainset is rt_set and dt >= sell_dt):
                             break
-                w = int(good) * .8 + .2
+                w = int(good) * .85 + .15
                 if hist_train_x is not None:
                     hist_set["train_x"].append(hist_train_x)
                     hist_set["train_y"].append(hist_train_y)
