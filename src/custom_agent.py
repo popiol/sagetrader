@@ -83,7 +83,7 @@ class CustomAgent:
             #common.log("rt pred:", confidence, buy_price, sell_price)
         return action
 
-    def fit(self, model, x, y):
+    def fit(self, model, x, y, weights):
         common.log("train set size:", len(x))
         if len(x) == 0:
             return
@@ -92,6 +92,7 @@ class CustomAgent:
             np.array(y).astype(np.float32),
             epochs=10,
             verbose=0,
+            sample_weight=np.array(weights),
         )
 
     def transform_x(self, state):
@@ -118,6 +119,7 @@ class CustomAgent:
             "train_y": [],
             "company": [],
             "dt": [],
+            "weights": [],
         }
         rt_set = {
             "all_x": [],
@@ -126,6 +128,7 @@ class CustomAgent:
             "train_y": [],
             "company": [],
             "dt": [],
+            "weights": [],
         }
         total = 0
         max_steps = self.train_max_steps if train else self.validate_max_steps
@@ -185,7 +188,6 @@ class CustomAgent:
             common.log("Good:", n_good, "Bad:", n_bad)
             for trans, good in good_bad_trans:
                 buy_dt = trans["buy_transaction"]["buy_dt"]
-                buy_dt_trunc = buy_dt.replace(hour=0, minute=0, second=0, microsecond=0)
                 sell_dt = trans["sell_dt"]
                 hist_train_x = None
                 hist_train_y = None
@@ -214,18 +216,22 @@ class CustomAgent:
                             sell_train_y = y
                         elif (trainset is hist_set and dt >= buy_dt) or (trainset is rt_set and dt >= sell_dt):
                             break
+                w = int(good) * .8 + .2
                 if hist_train_x is not None:
                     hist_set["train_x"].append(hist_train_x)
                     hist_set["train_y"].append(hist_train_y)
+                    hist_set["weights"].append(w)
                 if buy_train_x is not None:
                     rt_set["train_x"].append(buy_train_x)
                     rt_set["train_y"].append(buy_train_y)
+                    rt_set["weights"].append(w)
                 if sell_train_x is not None:
                     rt_set["train_x"].append(sell_train_x)
                     rt_set["train_y"].append(sell_train_y)
+                    rt_set["weights"].append(w)
             for _ in range(nit):
-                self.fit(self.hist_model, hist_set["train_x"], hist_set["train_y"])
-                self.fit(self.rt_model, rt_set["train_x"], rt_set["train_y"])
+                self.fit(self.hist_model, hist_set["train_x"], hist_set["train_y"], hist_set["weights"])
+                self.fit(self.rt_model, rt_set["train_x"], rt_set["train_y"], rt_set["weights"])
             self.fitted = True
             self.explore = max(0.3, self.explore * 0.9999)
         if self.max_total is None or total >= self.max_total:
@@ -237,7 +243,7 @@ class CustomAgent:
         self.max_total = None
         for _ in range(1000):
             self.run_episode()
-            if self.niter > 60000:
+            if self.niter > 70000:
                 break
         common.log(
             "avg r:",
