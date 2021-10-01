@@ -23,6 +23,8 @@ class CustomAgent:
         self.avg_total = None
         self.std_total = None
         self.max_total = None
+        self.avg_profit = None
+        self.std_profit = None
         self.explore = 1
         self.fitted = False
         self.best_score = None
@@ -169,7 +171,7 @@ class CustomAgent:
             self.avg_total * 0.9 + total * 0.1 if self.avg_total is not None else total
         )
         common.log(train, total, self.avg_total, self.std_total)
-        if train:  # and total > self.avg_total + self.std_total:
+        if train:
             common.log("Fit")
             nit = max(
                 1,
@@ -180,15 +182,28 @@ class CustomAgent:
             good_bad_trans = []
             n_good = 0
             n_bad = 0
+            n_neutral = 0
             for trans in self.env.transactions:
                 if not trans["buy"] and "profit_percent" in trans:
-                    if trans["profit_percent"] > 0:
+                    self.std_profit = (
+                        self.std_profit * 0.999 + abs(trans["profit_percent"] - self.avg_profit) * 0.001
+                        if self.std_profit is not None
+                        else 0
+                    )
+                    self.avg_profit = (
+                        self.avg_profit * 0.999 + trans["profit_percent"] * 0.001
+                        if self.avg_profit is not None
+                        else trans["profit_percent"]
+                    )
+                    if trans["profit_percent"] > max(0, self.avg_profit + self.std_profit):
                         good_bad_trans.append((trans, True))
                         n_good += 1
-                    else:
+                    elif trans["profit_percent"] < 0:
                         good_bad_trans.append((trans, False))
                         n_bad += 1
-            common.log("Good:", n_good, "Bad:", n_bad)
+                    else:
+                        n_neutral += 1
+            common.log("Good:", n_good, "Bad:", n_bad, "Neutral:", n_neutral)
             for trans, good in good_bad_trans:
                 buy_dt = trans["buy_transaction"]["buy_dt"]
                 sell_dt = trans["sell_dt"]
@@ -278,14 +293,14 @@ class CustomAgent:
             if self.niter > 70000:
                 break
         common.log(
-            "avg r:",
-            self.avg_reward,
-            ", avg total:",
+            "avg total:",
             self.avg_total,
-            ", std total:",
-            self.std_total,
-            "max:",
+            "max total:",
             self.max_total,
+            ", avg profit:",
+            self.avg_profit,
+            ", std profit:",
+            self.std_profit,
             "explore:",
             self.explore,
         )
@@ -319,6 +334,8 @@ class CustomAgent:
             "fitted": self.fitted,
             "avg_total": self.avg_total,
             "std_total": self.std_total,
+            "avg_profit": self.avg_profit,
+            "std_profit": self.std_profit,
         }
 
     def __setstate__(self, state: dict):
@@ -333,6 +350,8 @@ class CustomAgent:
         self.fitted = state["fitted"]
         self.avg_total = state.get("avg_total")
         self.std_total = state.get("std_total")
+        self.avg_profit = state.get("avg_profit")
+        self.std_profit = state.get("std_profit")
 
     def save_checkpoint(self, checkpoint_dir: str = None) -> str:
         if checkpoint_dir is None:
