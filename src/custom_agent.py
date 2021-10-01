@@ -265,7 +265,7 @@ class CustomAgent:
                     rt_set["weights"],
                 )
             self.fitted = True
-            self.explore = max(0.3, self.explore * 0.9999)
+            self.explore = max(0.3, self.explore * 0.999)
         if self.max_total is None or total >= self.max_total:
             self.max_total = total
         return total
