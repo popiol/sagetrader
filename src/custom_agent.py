@@ -189,23 +189,40 @@ class CustomAgent:
                 sell_dt = trans["sell_dt"]
                 hist_train_x = None
                 hist_train_y = None
+                buy_train_x = None
+                buy_train_y = None
+                sell_train_x = None
+                sell_train_y = None
                 for trainset in [hist_set, rt_set]:
                     for dt, company, x, y in zip(trainset["dt"], trainset["company"], trainset["all_x"], trainset["all_y"]):
                         if trainset is hist_set and company == trans["company"] and dt < buy_dt:
                             hist_train_x = x
                             hist_train_y = int(good)
-                        elif trainset is rt_set and company == trans["company"] and buy_dt_trunc < dt < sell_dt:
-                            trainset["train_x"].append(x)
+                        elif trainset is rt_set and company == trans["company"] and dt < buy_dt:
                             if good:
                                 y = [1, y[1], y[2]]
                             else:
                                 y = [0, 1 - y[1], 1 - y[2]]
-                            trainset["train_y"].append(y)
+                            buy_train_x = x
+                            buy_train_y = y
+                        elif trainset is rt_set and company == trans["company"] and dt < sell_dt:
+                            if good:
+                                y = [1, y[1], y[2]]
+                            else:
+                                y = [0, 1 - y[1], 1 - y[2]]
+                            sell_train_x = x
+                            sell_train_y = y
                         elif (trainset is hist_set and dt >= buy_dt) or (trainset is rt_set and dt >= sell_dt):
                             break
                 if hist_train_x is not None:
                     hist_set["train_x"].append(hist_train_x)
                     hist_set["train_y"].append(hist_train_y)
+                if buy_train_x is not None:
+                    rt_set["train_x"].append(buy_train_x)
+                    rt_set["train_y"].append(buy_train_y)
+                if sell_train_x is not None:
+                    rt_set["train_x"].append(sell_train_x)
+                    rt_set["train_y"].append(sell_train_y)
             for _ in range(nit):
                 self.fit(self.hist_model, hist_set["train_x"], hist_set["train_y"])
                 self.fit(self.rt_model, rt_set["train_x"], rt_set["train_y"])
@@ -220,7 +237,7 @@ class CustomAgent:
         self.max_total = None
         for _ in range(1000):
             self.run_episode()
-            if self.niter > 100000:
+            if self.niter > 50000:
                 break
         common.log(
             "avg r:",
