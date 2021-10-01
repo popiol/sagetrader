@@ -71,7 +71,7 @@ class CustomAgent:
             )[0][0]
             action = [confidence, 0.5, 0.5]
             self.confidences[self.env.company] = confidence
-            #common.log("hist pred:", confidence)
+            # common.log("hist pred:", confidence)
         else:
             confidence, buy_price, sell_price = self.rt_model.predict_on_batch(
                 np.array([x]).astype(np.float32)
@@ -80,7 +80,7 @@ class CustomAgent:
                 confidence + self.confidences.get(self.env.company, confidence)
             ) / 2
             action = [confidence, buy_price, sell_price]
-            #common.log("rt pred:", confidence, buy_price, sell_price)
+            # common.log("rt pred:", confidence, buy_price, sell_price)
         return action
 
     def fit(self, model, x, y, weights):
@@ -132,7 +132,7 @@ class CustomAgent:
         }
         total = 0
         max_steps = self.train_max_steps if train else self.validate_max_steps
-        seed = random.gauss(0, self.explore * .1)
+        seed = random.gauss(0, self.explore * 0.1)
         for _ in range(max_steps + 1):
             self.niter += 1
             x = self.transform_x(state)
@@ -146,7 +146,9 @@ class CustomAgent:
                 action = self.env.action_space.sample()
             if train and random.random() < self.explore:
                 for val_i, val in enumerate(action):
-                    action[val_i] = min(1, max(0, val + seed + random.gauss(0, self.explore * .1)))
+                    action[val_i] = min(
+                        1, max(0, val + seed + random.gauss(0, self.explore * 0.1))
+                    )
             if train:
                 y = self.transform_y(action)
                 trainset["all_x"].append(x)
@@ -167,7 +169,7 @@ class CustomAgent:
             self.avg_total * 0.9 + total * 0.1 if self.avg_total is not None else total
         )
         common.log(train, total, self.avg_total, self.std_total)
-        if train: # and total > self.avg_total + self.std_total:
+        if train:  # and total > self.avg_total + self.std_total:
             common.log("Fit")
             nit = max(
                 1,
@@ -197,27 +199,46 @@ class CustomAgent:
                 sell_train_x = None
                 sell_train_y = None
                 for trainset in [hist_set, rt_set]:
-                    for dt, company, x, y in zip(trainset["dt"], trainset["company"], trainset["all_x"], trainset["all_y"]):
-                        if trainset is hist_set and company == trans["company"] and dt < buy_dt:
+                    for dt, company, x, y in zip(
+                        trainset["dt"],
+                        trainset["company"],
+                        trainset["all_x"],
+                        trainset["all_y"],
+                    ):
+                        if (
+                            trainset is hist_set
+                            and company == trans["company"]
+                            and dt < buy_dt
+                        ):
                             hist_train_x = x
                             hist_train_y = int(good)
-                        elif trainset is rt_set and company == trans["company"] and dt < buy_dt:
+                        elif (
+                            trainset is rt_set
+                            and company == trans["company"]
+                            and dt < buy_dt
+                        ):
                             if good:
                                 y = [1, y[1], y[2]]
                             else:
                                 y = [0, 1 - y[1], 1 - y[2]]
                             buy_train_x = x
                             buy_train_y = y
-                        elif trainset is rt_set and company == trans["company"] and dt < sell_dt:
+                        elif (
+                            trainset is rt_set
+                            and company == trans["company"]
+                            and dt < sell_dt
+                        ):
                             if good:
                                 y = [1, y[1], y[2]]
                             else:
                                 y = [0, 1 - y[1], 1 - y[2]]
                             sell_train_x = x
                             sell_train_y = y
-                        elif (trainset is hist_set and dt >= buy_dt) or (trainset is rt_set and dt >= sell_dt):
+                        elif (trainset is hist_set and dt >= buy_dt) or (
+                            trainset is rt_set and dt >= sell_dt
+                        ):
                             break
-                w = int(good) * .85 + .15
+                w = int(good) * 0.85 + 0.15
                 if hist_train_x is not None:
                     hist_set["train_x"].append(hist_train_x)
                     hist_set["train_y"].append(hist_train_y)
@@ -231,8 +252,18 @@ class CustomAgent:
                     rt_set["train_y"].append(sell_train_y)
                     rt_set["weights"].append(w)
             for _ in range(nit):
-                self.fit(self.hist_model, hist_set["train_x"], hist_set["train_y"], hist_set["weights"])
-                self.fit(self.rt_model, rt_set["train_x"], rt_set["train_y"], rt_set["weights"])
+                self.fit(
+                    self.hist_model,
+                    hist_set["train_x"],
+                    hist_set["train_y"],
+                    hist_set["weights"],
+                )
+                self.fit(
+                    self.rt_model,
+                    rt_set["train_x"],
+                    rt_set["train_y"],
+                    rt_set["weights"],
+                )
             self.fitted = True
             self.explore = max(0.3, self.explore * 0.9999)
         if self.max_total is None or total >= self.max_total:
@@ -268,20 +299,21 @@ class CustomAgent:
         common.log("Current score:", total)
         if self.best_score is None or total >= self.best_score:
             self.best_score = total
-        self.save_checkpoint(self.model_dir)
+        self.save_checkpoint(self.model_dir, just_agent=(not quick))
         return total
 
-    def __getstate__(self) -> dict:
-        keras.models.save_model(
-            self.hist_model,
-            f"{self.model_dir}/hist_model-{self.worker_id}.h5",
-            save_format="h5",
-        )
-        keras.models.save_model(
-            self.rt_model,
-            f"{self.model_dir}/rt_model-{self.worker_id}.h5",
-            save_format="h5",
-        )
+    def __getstate__(self, just_agent: bool = False) -> dict:
+        if not just_agent:
+            keras.models.save_model(
+                self.hist_model,
+                f"{self.model_dir}/hist_model-{self.worker_id}.h5",
+                save_format="h5",
+            )
+            keras.models.save_model(
+                self.rt_model,
+                f"{self.model_dir}/rt_model-{self.worker_id}.h5",
+                save_format="h5",
+            )
         return {
             "best_score": self.best_score,
             "explore": self.explore,
@@ -303,11 +335,15 @@ class CustomAgent:
         self.avg_total = state.get("avg_total")
         self.std_total = state.get("std_total")
 
-    def save_checkpoint(self, checkpoint_dir: str = None) -> str:
+    def save_checkpoint(
+        self, checkpoint_dir: str = None, just_agent: bool = False
+    ) -> str:
         if checkpoint_dir is None:
             checkpoint_dir = self.model_dir
         checkpoint_path = f"{checkpoint_dir}/agent-{self.worker_id}.dat"
-        pickle.dump(self.__getstate__(), open(checkpoint_path, "wb"))
+        pickle.dump(
+            self.__getstate__(just_agent=just_agent), open(checkpoint_path, "wb")
+        )
         self.model_changed = True
         return checkpoint_path
 
