@@ -68,7 +68,7 @@ class StocksSimulator(gym.Env):
         """
         common.log_debug("place order:", company, n_shares, buy, rel_limit)
         limit = round(self.get_current_price(company) * (1 + rel_limit), 2)
-        self.orders[company] = {"n_shares": n_shares, "buy": buy, "limit": limit}
+        self.orders[company] = {"n_shares": n_shares, "buy": buy, "limit": limit, "order_dt": self.dt}
 
     def handle_orders(self):
         orders = {}
