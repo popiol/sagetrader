@@ -174,18 +174,15 @@ class CustomAgent:
             good_bad_trans = []
             n_good = 0
             n_bad = 0
-            n_neutral = 0
             for trans in self.env.transactions:
                 if not trans["buy"] and "profit_percent" in trans:
-                    if trans["profit_percent"] > .01:
+                    if trans["profit_percent"] > 0:
                         good_bad_trans.append((trans, True))
                         n_good += 1
-                    elif trans["profit_percent"] < 0:
+                    else:
                         good_bad_trans.append((trans, False))
                         n_bad += 1
-                    else:
-                        n_neutral += 1
-            common.log("Good:", n_good, "Bad:", n_bad, "Neutral:", n_neutral)
+            common.log("Good:", n_good, "Bad:", n_bad)
             for trans, good in good_bad_trans:
                 buy_dt = trans["buy_transaction"]["buy_dt"]
                 buy_dt_trunc = buy_dt.replace(hour=0, minute=0, second=0, microsecond=0)
