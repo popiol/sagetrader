@@ -122,7 +122,12 @@ class StocksSimulator(gym.Env):
         if self.last_event_type == self.HIST_EVENT or company not in self.rt_prices:
             return self.prices[company][-1][0]
         else:
-            return self.rt_prices[company][-1][0]
+            try:
+                return self.rt_prices[company][-1][0]
+            except Exception:
+                print(company)
+                print(self.rt_prices[company])
+                raise
 
     def get_capital(self):
         capital = self.cash
