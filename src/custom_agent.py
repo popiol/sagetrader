@@ -331,6 +331,7 @@ class CustomAgent:
                 common.log(agent_file, agent_data["best_score"])
                 if global_best is None or agent_data["best_score"] > global_best:
                     best_agent = agent_file
+                    global_best = agent_data["best_score"]
             if "agent-best" not in best_agent:
                 common.log(best_agent, "->", self.model_dir + "/agent-best.dat")
                 shutil.copyfile(best_agent, self.model_dir + "/agent-best.dat")
