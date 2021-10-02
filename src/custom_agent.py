@@ -321,6 +321,7 @@ class CustomAgent:
             global_best = None
             for agent_file in glob.iglob(self.model_dir + "/agent-????*.dat"):
                 agent_data = pickle.load(open(agent_file, "rb"))
+                common.log(agent_file, agent_data["best_score"])
                 if global_best is None or agent_data["best_score"] > global_best:
                     best_agent = agent_file
             if "agent-best" not in best_agent:
