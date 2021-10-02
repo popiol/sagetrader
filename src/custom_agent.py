@@ -314,7 +314,7 @@ class CustomAgent:
             total = self.run_episode(train=False)
         common.log("Best score:", self.best_score)
         common.log("Current score:", total)
-        if self.best_score is None or total >= self.best_score:
+        if self.best_score is None or total >= self.best_score or not quick:
             self.best_score = total
         self.save_checkpoint(self.model_dir)
         if not quick:
