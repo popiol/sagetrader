@@ -13,7 +13,7 @@ import shutil
 
 class CustomAgent:
     def __init__(
-        self, env: gym.Env, config: dict = {}, env_config: dict = {}, worker_id=9
+        self, env: gym.Env, config: dict = {}, env_config: dict = {}, worker_id=None
     ):
         self.env = env(env_config)
         self.train_max_steps = self.env.train_max_steps
@@ -32,7 +32,7 @@ class CustomAgent:
         self.best_score = None
         self.model_dir = "data"
         self.model_changed = False
-        self.worker_id = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        self.worker_id = worker_id if worker_id is not None else datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         self.confidences = {}
         self.niter = 0
 
