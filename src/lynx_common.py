@@ -22,6 +22,7 @@ def get_session_id():
         exit("Unknown error")
 
     if not resp.json()["iserver"]["authStatus"]["authenticated"]:
+        requests.get("https://localhost:5000/v1/api/logout", verify=False)
         exit("Not authenticated")
 
     session_id = resp.json()["session"]
