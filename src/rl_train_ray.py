@@ -70,6 +70,8 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
         files.extend(glob.glob(hist_model_file_worker))
         files.extend(glob.glob(rt_model_file_worker))
         for file in files:
+            if len(file.split("-")[1].split(".")[0]) >= 4:
+                continue
             os.remove(file)
 
         scores = [None] * n_workers
