@@ -32,7 +32,11 @@ class CustomAgent:
         self.best_score = None
         self.model_dir = "data"
         self.model_changed = False
-        self.worker_id = worker_id if worker_id is not None else datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        self.worker_id = (
+            worker_id
+            if worker_id is not None
+            else datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        )
         self.confidences = {}
         self.niter = 0
 
@@ -188,7 +192,8 @@ class CustomAgent:
             for trans in self.env.transactions:
                 if not trans["buy"] and "profit_percent" in trans:
                     self.std_profit = (
-                        self.std_profit * 0.999 + abs(trans["profit_percent"] - self.avg_profit) * 0.001
+                        self.std_profit * 0.999
+                        + abs(trans["profit_percent"] - self.avg_profit) * 0.001
                         if self.std_profit is not None
                         else 0
                     )
@@ -197,7 +202,9 @@ class CustomAgent:
                         if self.avg_profit is not None
                         else trans["profit_percent"]
                     )
-                    if trans["profit_percent"] > max(0, self.avg_profit + self.std_profit):
+                    if trans["profit_percent"] > max(
+                        0, self.avg_profit + self.std_profit
+                    ):
                         good_bad_trans.append((trans, True))
                         n_good += 1
                     elif trans["profit_percent"] < 0:
@@ -255,7 +262,7 @@ class CustomAgent:
                             trainset is rt_set and dt >= sell_dt
                         ):
                             break
-                w = int(good) * 0.85 + 0.15
+                w = int(good) * 0.8 + 0.2
                 if hist_train_x is not None:
                     hist_set["train_x"].append(hist_train_x)
                     hist_set["train_y"].append(hist_train_y)
@@ -327,10 +334,18 @@ class CustomAgent:
             if "agent-best" not in best_agent:
                 common.log(best_agent, "->", self.model_dir + "/agent-best.dat")
                 shutil.copyfile(best_agent, self.model_dir + "/agent-best.dat")
-                hist_model_file = best_agent.replace("agent", "hist_model").replace(".dat", ".h5")
-                common.log(hist_model_file, "->", self.model_dir + "/hist_model-best.dat")
-                shutil.copyfile(hist_model_file, self.model_dir + "/hist_model-best.dat")
-                rt_model_file = best_agent.replace("agent", "rt_model").replace(".dat", ".h5")
+                hist_model_file = best_agent.replace("agent", "hist_model").replace(
+                    ".dat", ".h5"
+                )
+                common.log(
+                    hist_model_file, "->", self.model_dir + "/hist_model-best.dat"
+                )
+                shutil.copyfile(
+                    hist_model_file, self.model_dir + "/hist_model-best.dat"
+                )
+                rt_model_file = best_agent.replace("agent", "rt_model").replace(
+                    ".dat", ".h5"
+                )
                 common.log(rt_model_file, "->", self.model_dir + "/rt_model-best.dat")
                 shutil.copyfile(rt_model_file, self.model_dir + "/rt_model-best.dat")
         return total
