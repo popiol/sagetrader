@@ -125,8 +125,8 @@ class StocksSimulator(gym.Env):
             try:
                 return self.rt_prices[company][-1][0]
             except Exception:
-                print(company)
-                print(self.rt_prices[company])
+                common.log(company)
+                common.log(self.rt_prices[company])
                 raise
 
     def get_capital(self):
