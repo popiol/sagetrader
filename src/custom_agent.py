@@ -292,7 +292,7 @@ class CustomAgent:
         self.max_total = None
         for _ in range(1000):
             self.run_episode()
-            if self.niter > 70000:
+            if self.niter > 50000:
                 break
         common.log(
             "avg total:",
