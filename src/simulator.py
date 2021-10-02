@@ -119,16 +119,11 @@ class StocksSimulator(gym.Env):
         return max(0, min(1, math.pow(abs(x), 1 / 3) * math.copysign(1, x) + 0.5))
 
     def get_current_price(self, company):
-        if self.last_event_type == self.HIST_EVENT or company not in self.rt_prices:
+        if self.last_event_type == self.HIST_EVENT or company not in self.rt_prices or not self.rt_prices[company]:
             return self.prices[company][-1][0]
         else:
-            try:
-                return self.rt_prices[company][-1][0]
-            except Exception:
-                common.log(company)
-                common.log(self.rt_prices[company])
-                raise
-
+            return self.rt_prices[company][-1][0]
+            
     def get_capital(self):
         capital = self.cash
         for company, item in self.portfolio.items():
