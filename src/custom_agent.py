@@ -319,14 +319,17 @@ class CustomAgent:
         self.save_checkpoint(self.model_dir)
         if not quick:
             global_best = None
-            for agent_file in glob.iglob(self.model_dir + "/agent*"):
+            for agent_file in glob.iglob(self.model_dir + "/agent-????*.dat"):
                 agent_data = pickle.load(open(agent_file, "rb"))
                 if global_best is None or agent_data["best_score"] > global_best:
                     best_agent = agent_file
+            common.log(best_agent, "->", self.model_dir + "/agent-best.dat")
             shutil.copyfile(best_agent, self.model_dir + "/agent-best.dat")
-            hist_model_file = agent_file.replace("agent", "hist_model").replace(".dat", ".h5")
+            hist_model_file = best_agent.replace("agent", "hist_model").replace(".dat", ".h5")
+            common.log(hist_model_file, "->", self.model_dir + "/hist_model-best.dat")
             shutil.copyfile(hist_model_file, self.model_dir + "/hist_model-best.dat")
-            rt_model_file = agent_file.replace("agent", "rt_model").replace(".dat", ".h5")
+            rt_model_file = best_agent.replace("agent", "rt_model").replace(".dat", ".h5")
+            common.log(rt_model_file, "->", self.model_dir + "/rt_model-best.dat")
             shutil.copyfile(rt_model_file, self.model_dir + "/rt_model-best.dat")
         return total
 
