@@ -318,6 +318,7 @@ class CustomAgent:
         if quick:
             total = self.max_total
         else:
+            self.env.log_transactions = True
             total = self.run_episode(train=False)
         common.log("Best score:", self.best_score)
         common.log("Current score:", total)

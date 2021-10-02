@@ -33,7 +33,8 @@ class StocksSimulator(gym.Env):
         self.provision = 0.001
         self.min_transaction_value = 1000.0
         self.last_event_type = None
-        #self.reset()
+        self.log_tranactions = False
+        # self.reset()
 
     def _reset(self):
         return []
@@ -68,7 +69,12 @@ class StocksSimulator(gym.Env):
         """
         common.log_debug("place order:", company, n_shares, buy, rel_limit)
         limit = round(self.get_current_price(company) * (1 + rel_limit), 2)
-        self.orders[company] = {"n_shares": n_shares, "buy": buy, "limit": limit, "order_dt": self.dt}
+        self.orders[company] = {
+            "n_shares": n_shares,
+            "buy": buy,
+            "limit": limit,
+            "order_dt": self.dt,
+        }
 
     def handle_orders(self):
         orders = {}
@@ -91,7 +97,8 @@ class StocksSimulator(gym.Env):
                 self.transactions.append(order)
                 complete = True
                 self.n_bought += 1
-                common.log_debug("buy:", order)
+                if self.log_tranactions:
+                    common.log("buy:", order)
             elif not order["buy"] and order["limit"] < price:
                 del self.portfolio[company]
                 for trans in reversed(self.transactions):
@@ -104,7 +111,8 @@ class StocksSimulator(gym.Env):
                 self.transactions.append(order)
                 complete = True
                 self.n_sold += 1
-                common.log_debug("sell:", order)
+                if self.log_tranactions:
+                    common.log("sell:", order)
             if complete:
                 val = order["n_shares"] * order["limit"]
                 self.cash -= val * (1 if order["buy"] else -1) + self.provision * val
@@ -119,11 +127,15 @@ class StocksSimulator(gym.Env):
         return max(0, min(1, math.pow(abs(x), 1 / 3) * math.copysign(1, x) + 0.5))
 
     def get_current_price(self, company):
-        if self.last_event_type == self.HIST_EVENT or company not in self.rt_prices or not self.rt_prices[company]:
+        if (
+            self.last_event_type == self.HIST_EVENT
+            or company not in self.rt_prices
+            or not self.rt_prices[company]
+        ):
             return self.prices[company][-1][0]
         else:
             return self.rt_prices[company][-1][0]
-            
+
     def get_capital(self):
         capital = self.cash
         for company, item in self.portfolio.items():
@@ -148,8 +160,8 @@ class StocksSimulator(gym.Env):
             self.done = True
         self.handle_orders()
         confidence = action[0]
-        rel_buy_price = self.relative_price_decode(action[1] - .2)
-        rel_sell_price = self.relative_price_decode(action[2] + .2)
+        rel_buy_price = self.relative_price_decode(action[1] - 0.2)
+        rel_sell_price = self.relative_price_decode(action[2] + 0.2)
 
         if self.last_event_type == self.HIST_EVENT:
             self.watchlist = []
@@ -256,7 +268,9 @@ class StocksRTSimulator(StocksSimulator):
             dt1 += datetime.timedelta(days=shift)
             dt2 = dt1 + datetime.timedelta(days=360)
         else:
-            dt2 = datetime.datetime.now() - datetime.timedelta(days=self.max_steps//300)
+            dt2 = datetime.datetime.now() - datetime.timedelta(
+                days=self.max_steps // 300
+            )
             dt1 = dt2 - datetime.timedelta(days=360)
         self.dt = dt1
         common.log("Start preparation on:", self.dt.strftime(self.DT_FORMAT))
@@ -360,7 +374,9 @@ class StocksRTSimulator(StocksSimulator):
                     x *= self.size_scale[conid]
                 rt.append(x)
             self.rt_prices[conid].append(rt)
-            self.dt = self.dt.replace(hour=int(hour[:2]), minute=int(hour[2:4]), second=int(hour[4:]))
+            self.dt = self.dt.replace(
+                hour=int(hour[:2]), minute=int(hour[2:4]), second=int(hour[4:])
+            )
             return conid, self.rt_prices[conid]
         except StopIteration:
             self.rt_data = None
