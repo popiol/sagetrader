@@ -33,7 +33,7 @@ class StocksSimulator(gym.Env):
         self.provision = 0.001
         self.min_transaction_value = 1000.0
         self.last_event_type = None
-        self.log_tranactions = False
+        self.log_transactions = False
         # self.reset()
 
     def _reset(self):
@@ -97,7 +97,7 @@ class StocksSimulator(gym.Env):
                 self.transactions.append(order)
                 complete = True
                 self.n_bought += 1
-                if self.log_tranactions:
+                if self.log_transactions:
                     common.log("buy:", order)
             elif not order["buy"] and order["limit"] < price:
                 del self.portfolio[company]
@@ -111,7 +111,7 @@ class StocksSimulator(gym.Env):
                 self.transactions.append(order)
                 complete = True
                 self.n_sold += 1
-                if self.log_tranactions:
+                if self.log_transactions:
                     common.log("sell:", order)
             if complete:
                 val = order["n_shares"] * order["limit"]
