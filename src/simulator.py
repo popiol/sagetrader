@@ -99,7 +99,7 @@ class StocksSimulator(gym.Env):
                 complete = True
                 self.n_bought += 1
                 if self.log_transactions:
-                    common.log("buy:", "limit", order["limit"], "n_shares", order["n_shares"], "buy_dt", order["buy_dt"], "company", order["company"])
+                    common.log("buy:", "limit", order["limit"], "n_shares", order["n_shares"], "buy_dt", order["buy_dt"], "company", order["company"], "capital", self.get_capital())
             elif not order["buy"] and order["limit"] < price:
                 del self.portfolio[company]
                 for trans in reversed(self.transactions):
@@ -113,7 +113,7 @@ class StocksSimulator(gym.Env):
                 complete = True
                 self.n_sold += 1
                 if self.log_transactions:
-                    common.log("sell:", "limit", order["limit"], "n_shares", order["n_shares"], "sell_dt", order["sell_dt"], "company", order["company"])
+                    common.log("sell:", "limit", order["limit"], "n_shares", order["n_shares"], "sell_dt", order["sell_dt"], "company", order["company"], "capital", self.get_capital())
             if complete:
                 val = order["n_shares"] * order["limit"]
                 self.cash -= val * (1 if order["buy"] else -1) + self.provision * val
