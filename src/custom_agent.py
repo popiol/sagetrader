@@ -183,7 +183,7 @@ class CustomAgent:
                 round((total - self.avg_total + 1) / (self.std_total + 1)),
             )
             nit = 1
-            common.log("nit:", nit)
+            #common.log("nit:", nit)
             good_bad_trans = []
             n_good = 0
             n_bad = 0
