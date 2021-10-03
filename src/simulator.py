@@ -6,7 +6,6 @@ import datetime
 from gym.spaces import Box
 import common
 import csv
-import time
 
 
 class StocksSimulator(gym.Env):
@@ -198,7 +197,7 @@ class StocksSimulator(gym.Env):
         if self.done:
             common.log("Finish simulation on:", self.dt.strftime(self.DT_FORMAT))
             common.log("capital:", self.capital, ", reward:", self.total_reward)
-        reward = self.capital / self.cash_init - 1
+        reward = (self.capital / self.cash_init - 1) * self.steps / 10000
         if self.capital > 20000:
             common.log("dt:", self.dt)
             common.log("capital:", self.capital)

@@ -313,7 +313,7 @@ class CustomAgent:
             self.explore,
         )
 
-    def evaluate(self, quick=False):
+    def evaluate(self, quick=False, find_best=False):
         if quick:
             total = self.max_total
         else:
@@ -324,7 +324,7 @@ class CustomAgent:
         if self.best_score is None or total >= self.best_score or not quick:
             self.best_score = total
         self.save_checkpoint(self.model_dir)
-        if not quick:
+        if find_best:
             global_best = None
             for agent_file in glob.iglob(self.model_dir + "/agent-????*.dat"):
                 agent_data = pickle.load(open(agent_file, "rb"))
@@ -372,13 +372,14 @@ class CustomAgent:
             "std_profit": self.std_profit,
         }
 
-    def __setstate__(self, state: dict):
-        self.hist_model = keras.models.load_model(
-            f"{self.model_dir}/hist_model.h5", compile=True
-        )
-        self.rt_model = keras.models.load_model(
-            f"{self.model_dir}/rt_model.h5", compile=True
-        )
+    def __setstate__(self, state: dict, worker_id=None):
+        hist_model_file = f"{self.model_dir}/hist_model.h5"
+        rt_model_file = f"{self.model_dir}/rt_model.h5"
+        if worker_id is not None:
+            hist_model_file = hist_model_file.replace(".h5", f"-{worker_id}.h5")
+            rt_model_file = rt_model_file.replace(".h5", f"-{worker_id}.h5")
+        self.hist_model = keras.models.load_model(hist_model_file, compile=True)
+        self.rt_model = keras.models.load_model(rt_model_file, compile=True)
         self.best_score = state["best_score"]
         self.explore = state["explore"]
         self.fitted = state["fitted"]
@@ -396,5 +397,8 @@ class CustomAgent:
         return checkpoint_path
 
     def load_checkpoint(self, checkpoint_path: str):
+        worker_id = None
+        if "-" in checkpoint_path:
+            worker_id = checkpoint_path.split("-")[-1].split(".")[0]
         extra_data = pickle.load(open(checkpoint_path, "rb"))
-        self.__setstate__(extra_data)
+        self.__setstate__(extra_data, worker_id)
