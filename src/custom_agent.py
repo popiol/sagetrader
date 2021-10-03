@@ -183,7 +183,7 @@ class CustomAgent:
                 round((total - self.avg_total + 1) / (self.std_total + 1)),
             )
             nit = 1
-            #common.log("nit:", nit)
+            # common.log("nit:", nit)
             good_bad_trans = []
             n_good = 0
             n_bad = 0
@@ -202,7 +202,7 @@ class CustomAgent:
                         else trans["profit_percent"]
                     )
                     if trans["profit_percent"] > max(
-                        0, self.avg_profit + self.std_profit
+                        0, self.avg_profit + 0.5 * self.std_profit
                     ):
                         good_bad_trans.append((trans, True))
                         n_good += 1
