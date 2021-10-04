@@ -162,6 +162,8 @@ def get_first_timestamp(filename):
 
 def assert_new_timestamp(filename, first_timestamp, conid):
     timestamp = get_last_timestamp(filename)
+    if timestamp is None:
+        raise Exception(timestamp, filename, first_timestamp, conid)
     if timestamp >= first_timestamp:
         raise AppendDataError(conid, timestamp, first_timestamp)
 
