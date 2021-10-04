@@ -240,6 +240,21 @@ def find_random_rt_quotes():
     return path
 
 
+def data_files_iter(hist : bool):
+    pattern =  hist_quotes_filename if hist else rt_quotes_filename
+    paths = [pattern.split("{")[0]]
+    while True:
+        if not paths:
+            break
+        path = paths[0]
+        paths = paths[1:]
+        for subpath in glob.iglob(path + "/*"):
+            if subpath.endswith(".csv"):
+                yield subpath
+            else:
+                paths.append(subpath)
+
+
 def get_watchlist():
     companies = load_comp_list()
     conidexs = None
