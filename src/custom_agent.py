@@ -45,9 +45,8 @@ class CustomAgent:
         l = inputs
         l = keras.layers.LSTM(self.max_quotes)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(50, activation="relu")(l)
-        l = keras.layers.Dense(20, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         outputs = keras.layers.Dense(1, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
@@ -62,9 +61,8 @@ class CustomAgent:
         l = inputs
         l = keras.layers.LSTM(self.max_quotes)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(50, activation="relu")(l)
-        l = keras.layers.Dense(20, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         outputs = keras.layers.Dense(3, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
@@ -263,7 +261,7 @@ class CustomAgent:
                             trainset is rt_set and dt >= sell_dt
                         ):
                             break
-                w = int(good) * 0.85 + 0.15
+                w = int(good) * 0.8 + 0.2
                 if hist_train_x is not None:
                     hist_set["train_x"].append(hist_train_x)
                     hist_set["train_y"].append(hist_train_y)
