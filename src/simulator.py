@@ -326,7 +326,7 @@ class StocksRTSimulator(StocksSimulator):
             self.size_scale = {}
             self.rt_conid2 = {}
             for conid in self.watchlist:
-                self.rt_prices[conid] = [self.prices[conid][-1][0]]
+                self.rt_prices[conid] = [[self.prices[conid][-1][0]] + [0] * (len(self.rt_header) - 1)]
                 filename = common.find_random_rt_quotes()
                 with open(filename, "r") as f:
                     reader = csv.DictReader(f)
