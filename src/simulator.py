@@ -431,6 +431,8 @@ class StocksRTSimulator(StocksSimulator):
                     for key in self.bar_header:
                         bar.append(common.price_to_float(row[key]))
                     if conid in self.prices:
+                        if not .5 < bar[0] / self.prices[conid][-1][0] < 2:
+                            bar[0] = self.prices[conid][-1][0]
                         self.prices[conid].append(bar)
                         self.timestamps[conid].append(dt.strftime(self.DT_FORMAT))
                     else:
