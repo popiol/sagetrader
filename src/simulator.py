@@ -54,6 +54,7 @@ class StocksSimulator(gym.Env):
         self.n_bought = 0
         self.n_sold = 0
         self.transactions = []
+        self.prev_dt = None
         return self.state
 
     def next_state(self):
@@ -169,9 +170,17 @@ class StocksSimulator(gym.Env):
         rel_sell_price = self.relative_price_decode(action[2] + 0.2)
 
         if self.last_event_type == self.HIST_EVENT:
-            self.watchlist = []
+            if self.prev_dt is None or self.dt.day != self.prev_dt.day:
+                self.watchlist = []
+            self.prev_dt = self.dt
+
             for company in self.portfolio:
-                self.watchlist.append(company)
+                if company not in self.watchlist:
+                    self.watchlist.append(company)
+
+            for company in self.orders:
+                if company not in self.watchlist:
+                    self.watchlist.append(company)
 
             if (
                 len(self.watchlist) < self.watchlist_size
