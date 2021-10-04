@@ -135,29 +135,19 @@ def load_comp_list():
 
 
 def get_last_timestamp(filename):
-    try:
-        with open(filename, "r") as f:
-            header = next(f).strip().split(",")
-            last = None
-            for line in f:
-                if "," in line:
-                    last = line
-        last = last.strip().split(",")
-        timestamp = int(last[header.index("t")])
-        return timestamp
-    except Exception:
-        return None
-
+    with open(filename, "r") as f:
+        reader = csv.DictReader(f)
+        data = list(reader)
+    timestamp = int(data[-1]["t"])
+    return timestamp
+    
 
 def get_first_timestamp(filename):
-    try:
-        with open(filename, "r") as f:
-            header = next(f).strip().split(",")
-            last = next(f).strip().split(",")
-        timestamp = int(last[header.index("t")])
-        return timestamp
-    except Exception:
-        return None
+    with open(filename, "r") as f:
+        reader = csv.DictReader(f)
+        first_row = next(reader)
+    timestamp = int(first_row["t"])
+    return timestamp
 
 
 def assert_new_timestamp(filename, first_timestamp, conid):
