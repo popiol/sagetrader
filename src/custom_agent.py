@@ -263,7 +263,7 @@ class CustomAgent:
                             trainset is rt_set and dt >= sell_dt
                         ):
                             break
-                w = int(good) * 0.8 + 0.2
+                w = int(good) * 0.85 + 0.15
                 if hist_train_x is not None:
                     hist_set["train_x"].append(hist_train_x)
                     hist_set["train_y"].append(hist_train_y)
