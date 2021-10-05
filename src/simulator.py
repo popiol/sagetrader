@@ -211,7 +211,6 @@ class StocksSimulator(gym.Env):
                 # common.log("Clear watchlist")
             self.prev_dt = self.dt
             self.n_processed += 1
-            common.log("Hist comp processed:", self.n_processed)
 
             for company in self.portfolio:
                 if company not in self.watchlist:
@@ -231,6 +230,7 @@ class StocksSimulator(gym.Env):
                 and self.company not in self.watchlist
             ):
                 self.watchlist.append(self.company)
+                common.log("Hist comp processed:", self.n_processed)
 
             # common.log(self.dt, "watchlist size:", len(self.watchlist))
 
