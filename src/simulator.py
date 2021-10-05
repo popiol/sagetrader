@@ -55,6 +55,8 @@ class StocksSimulator(gym.Env):
         self.n_sold = 0
         self.transactions = []
         self.prev_dt = None
+        self.avg_confidence = None
+        self.std_confidence = None
         return self.state
 
     def next_state(self):
@@ -89,7 +91,7 @@ class StocksSimulator(gym.Env):
                 break
             complete = False
             price = self.get_current_price(company)
-            if not .9 < order["limit"] / price < 1.1:
+            if not 0.9 < order["limit"] / price < 1.1:
                 continue
             if order["buy"] and order["limit"] > price:
                 self.portfolio[company] = {
@@ -102,7 +104,17 @@ class StocksSimulator(gym.Env):
                 complete = True
                 self.n_bought += 1
                 if self.log_transactions:
-                    common.log("buy:", "limit", order["limit"], "n_shares", order["n_shares"], "buy_dt", order["buy_dt"], "company", order["company"])
+                    common.log(
+                        "buy:",
+                        "limit",
+                        order["limit"],
+                        "n_shares",
+                        order["n_shares"],
+                        "buy_dt",
+                        order["buy_dt"],
+                        "company",
+                        order["company"],
+                    )
             elif not order["buy"] and order["limit"] < price:
                 del self.portfolio[company]
                 for trans in reversed(self.transactions):
@@ -116,7 +128,17 @@ class StocksSimulator(gym.Env):
                 complete = True
                 self.n_sold += 1
                 if self.log_transactions:
-                    common.log("sell:", "limit", order["limit"], "n_shares", order["n_shares"], "sell_dt", order["sell_dt"], "company", order["company"])
+                    common.log(
+                        "sell:",
+                        "limit",
+                        order["limit"],
+                        "n_shares",
+                        order["n_shares"],
+                        "sell_dt",
+                        order["sell_dt"],
+                        "company",
+                        order["company"],
+                    )
             if complete:
                 val = order["n_shares"] * order["limit"]
                 self.cash -= val * (1 if order["buy"] else -1) + self.provision * val
@@ -168,6 +190,16 @@ class StocksSimulator(gym.Env):
         confidence = action[0]
         rel_buy_price = self.relative_price_decode(action[1] - 0.2)
         rel_sell_price = self.relative_price_decode(action[2] + 0.2)
+        self.std_confidence = (
+            self.std_confidence * 0.999 + abs(confidence - self.avg_confidence) * 0.001
+            if self.avg_confidence is not None and self.std_confidence is not None
+            else 0
+        )
+        self.avg_confidence = (
+            self.avg_confidence * 0.999 + confidence * 0.001
+            if self.avg_confidence is not None
+            else confidence
+        )
 
         if self.last_event_type == self.HIST_EVENT:
             if self.prev_dt is None or self.dt.day != self.prev_dt.day:
@@ -185,6 +217,7 @@ class StocksSimulator(gym.Env):
             if (
                 len(self.watchlist) < self.watchlist_size
                 and confidence > self.confidence_th
+                and confidence > self.avg_confidence + 2 * self.std_confidence
                 and self.company not in self.watchlist
             ):
                 self.watchlist.append(self.company)
@@ -337,7 +370,9 @@ class StocksRTSimulator(StocksSimulator):
             self.size_scale = {}
             self.rt_conid2 = {}
             for conid in self.watchlist:
-                self.rt_prices[conid] = [[self.prices[conid][-1][0]] + [0] * (len(self.rt_header) - 1)]
+                self.rt_prices[conid] = [
+                    [self.prices[conid][-1][0]] + [0] * (len(self.rt_header) - 1)
+                ]
                 filename = common.find_random_rt_quotes()
                 with open(filename, "r") as f:
                     reader = csv.DictReader(f)
