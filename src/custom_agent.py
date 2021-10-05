@@ -338,16 +338,14 @@ class CustomAgent:
                     ".dat", ".h5"
                 )
                 common.log(
-                    hist_model_file, "->", self.model_dir + "/hist_model-best.dat"
+                    hist_model_file, "->", self.model_dir + "/hist_model-best.h5"
                 )
-                shutil.copyfile(
-                    hist_model_file, self.model_dir + "/hist_model-best.dat"
-                )
+                shutil.copyfile(hist_model_file, self.model_dir + "/hist_model-best.h5")
                 rt_model_file = best_agent.replace("agent", "rt_model").replace(
                     ".dat", ".h5"
                 )
-                common.log(rt_model_file, "->", self.model_dir + "/rt_model-best.dat")
-                shutil.copyfile(rt_model_file, self.model_dir + "/rt_model-best.dat")
+                common.log(rt_model_file, "->", self.model_dir + "/rt_model-best.h5")
+                shutil.copyfile(rt_model_file, self.model_dir + "/rt_model-best.h5")
         return total
 
     def __getstate__(self) -> dict:
