@@ -225,7 +225,7 @@ class StocksSimulator(gym.Env):
                 and confidence > self.confidence_th
                 and confidence
                 > self.avg_confidence
-                + 2.3 * self.std_confidence
+                + 2.8 * self.std_confidence
                 and not self.first_day
                 and self.company not in self.watchlist
             ):
