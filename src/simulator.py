@@ -223,9 +223,7 @@ class StocksSimulator(gym.Env):
             if (
                 len(self.watchlist) < self.watchlist_size
                 and confidence > self.confidence_th
-                and confidence
-                > self.avg_confidence
-                + 2.9 * self.std_confidence
+                and confidence > self.avg_confidence + 3 * self.std_confidence
                 and not self.first_day
                 and self.company not in self.watchlist
             ):
@@ -453,6 +451,7 @@ class StocksRTSimulator(StocksSimulator):
                 return conid, prices
             except StopIteration:
                 self.comp_iter = None
+        conids = []
         for _ in range(10):
             month_to_load = self.dt.strftime("%Y%m")
             if self.month_loaded is None or month_to_load > self.month_loaded:
@@ -480,7 +479,6 @@ class StocksRTSimulator(StocksSimulator):
                 self.dt = closest_dt
             if self.stop_before is not None and self.dt >= self.stop_before:
                 return None, None
-            conids = []
             for row in self.data:
                 dt = common.row_to_datetime(row)
                 if dt == closest_dt:
@@ -497,13 +495,14 @@ class StocksRTSimulator(StocksSimulator):
                     conids.append(conid)
                 elif dt > closest_dt:
                     break
-            if conids:
-                random.shuffle(conids)
-                self.last_hist_conid = conids[-1]
-                self.comp_iter = iter({x: self.prices[x] for x in conids}.items())
-            else:
-                self.comp_iter = None
-            break
+            if len(conids) >= 100:
+                break
+        if conids:
+            random.shuffle(conids)
+            self.last_hist_conid = conids[-1]
+            self.comp_iter = iter({x: self.prices[x] for x in conids}.items())
+        else:
+            self.comp_iter = None
         if self.comp_iter is not None:
             return next(self.comp_iter)
         return None, None
