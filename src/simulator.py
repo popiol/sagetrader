@@ -205,6 +205,7 @@ class StocksSimulator(gym.Env):
         if self.last_event_type == self.HIST_EVENT:
             if self.prev_dt is None or self.dt.day != self.prev_dt.day:
                 self.watchlist = []
+
                 if self.prev_dt is not None:
                     self.first_day = False
                 # common.log("Clear watchlist")
@@ -495,6 +496,7 @@ class StocksRTSimulator(StocksSimulator):
                 elif dt > closest_dt:
                     break
             if conids:
+                random.shuffle(conids)
                 self.last_hist_conid = conids[-1]
                 self.comp_iter = iter({x: self.prices[x] for x in conids}.items())
             else:
