@@ -207,7 +207,7 @@ class StocksSimulator(gym.Env):
                 self.watchlist = []
                 if self.prev_dt is not None:
                     self.first_day = False
-                #common.log("Clear watchlist")
+                # common.log("Clear watchlist")
             self.prev_dt = self.dt
 
             for company in self.portfolio:
@@ -221,13 +221,15 @@ class StocksSimulator(gym.Env):
             if (
                 len(self.watchlist) < self.watchlist_size
                 and confidence > self.confidence_th
-                and confidence > self.avg_confidence + 3 * self.std_confidence
+                and confidence
+                > self.avg_confidence
+                + (3 if self.stage == self.TRAINING else 2.8) * self.std_confidence
                 and not self.first_day
                 and self.company not in self.watchlist
             ):
                 self.watchlist.append(self.company)
 
-            #common.log(self.dt, "watchlist size:", len(self.watchlist))
+            # common.log(self.dt, "watchlist size:", len(self.watchlist))
 
         if self.last_event_type == self.RT_EVENT:
             if self.company in self.portfolio:
