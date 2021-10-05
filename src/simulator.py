@@ -145,7 +145,7 @@ class StocksSimulator(gym.Env):
                 self.cash -= val * (1 if order["buy"] else -1) + self.provision * val
                 if self.log_transactions:
                     common.log("capital", self.get_capital())
-                    common.log("watchlist size", len(self.watchlist))
+                    common.log("watchlist", self.watchlist)
             else:
                 orders[company] = order
         self.orders = orders
@@ -214,10 +214,6 @@ class StocksSimulator(gym.Env):
             self.n_processed += 1
 
             for company in self.portfolio:
-                if company not in self.watchlist:
-                    self.watchlist.append(company)
-
-            for company in self.orders:
                 if company not in self.watchlist:
                     self.watchlist.append(company)
 
