@@ -205,11 +205,13 @@ class StocksSimulator(gym.Env):
         if self.last_event_type == self.HIST_EVENT:
             if self.prev_dt is None or self.dt.day != self.prev_dt.day:
                 self.watchlist = []
-
+                self.n_processed = 0
                 if self.prev_dt is not None:
                     self.first_day = False
                 # common.log("Clear watchlist")
             self.prev_dt = self.dt
+            self.n_processed += 1
+            common.log("Hist comp processed:", self.n_processed)
 
             for company in self.portfolio:
                 if company not in self.watchlist:
