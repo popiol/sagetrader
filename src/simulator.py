@@ -57,6 +57,7 @@ class StocksSimulator(gym.Env):
         self.prev_dt = None
         self.avg_confidence = None
         self.std_confidence = None
+        self.first_day = True
         return self.state
 
     def next_state(self):
@@ -191,7 +192,7 @@ class StocksSimulator(gym.Env):
         rel_buy_price = self.relative_price_decode(action[1] - 0.2)
         rel_sell_price = self.relative_price_decode(action[2] + 0.2)
         self.std_confidence = (
-            self.std_confidence * 0.999 + abs(confidence - self.avg_confidence) * 0.001
+            self.std_confidence * 0.9999 + abs(confidence - self.avg_confidence) * 0.0001
             if self.avg_confidence is not None and self.std_confidence is not None
             else 0
         )
@@ -204,6 +205,9 @@ class StocksSimulator(gym.Env):
         if self.last_event_type == self.HIST_EVENT:
             if self.prev_dt is None or self.dt.day != self.prev_dt.day:
                 self.watchlist = []
+                if self.prev_dt is not None:
+                    self.first_day = False
+                #common.log("Clear watchlist")
             self.prev_dt = self.dt
 
             for company in self.portfolio:
@@ -217,10 +221,13 @@ class StocksSimulator(gym.Env):
             if (
                 len(self.watchlist) < self.watchlist_size
                 and confidence > self.confidence_th
-                and confidence > self.avg_confidence + 2 * self.std_confidence
+                and confidence > self.avg_confidence + 3 * self.std_confidence
+                and not self.first_day
                 and self.company not in self.watchlist
             ):
                 self.watchlist.append(self.company)
+
+            #common.log(self.dt, "watchlist size:", len(self.watchlist))
 
         if self.last_event_type == self.RT_EVENT:
             if self.company in self.portfolio:

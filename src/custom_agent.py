@@ -92,7 +92,6 @@ class CustomAgent:
         return action
 
     def fit(self, model, x, y, weights):
-        common.log("train set size:", len(x))
         if len(x) == 0:
             return
         model.fit(
@@ -188,6 +187,7 @@ class CustomAgent:
             n_good = 0
             n_bad = 0
             n_neutral = 0
+            common.log("n transactions:", len(self.env.transactions))
             for trans in self.env.transactions:
                 if not trans["buy"] and "profit_percent" in trans:
                     self.std_profit = (
