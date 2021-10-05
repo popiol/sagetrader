@@ -223,7 +223,7 @@ class StocksSimulator(gym.Env):
                 and confidence > self.confidence_th
                 and confidence
                 > self.avg_confidence
-                + (3 if self.stage == self.TRAINING else 2.7) * self.std_confidence
+                + (3 if self.stage == self.TRAINING else 2.5) * self.std_confidence
                 and not self.first_day
                 and self.company not in self.watchlist
             ):
