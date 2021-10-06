@@ -45,9 +45,8 @@ class CustomAgent:
         l = inputs
         l = keras.layers.LSTM(self.max_quotes)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(50, activation="relu")(l)
-        l = keras.layers.Dense(20, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         outputs = keras.layers.Dense(1, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
@@ -62,9 +61,8 @@ class CustomAgent:
         l = inputs
         l = keras.layers.LSTM(self.max_quotes)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(50, activation="relu")(l)
-        l = keras.layers.Dense(20, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         outputs = keras.layers.Dense(3, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
