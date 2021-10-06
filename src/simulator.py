@@ -219,7 +219,7 @@ class StocksSimulator(gym.Env):
             if (
                 len(self.watchlist) < self.watchlist_size
                 and confidence > self.confidence_th
-                and confidence > self.avg_confidence + 3 * self.std_confidence
+                and confidence > self.avg_confidence + 3.1 * self.std_confidence
                 and not self.first_day
                 and self.company not in self.watchlist
             ):
