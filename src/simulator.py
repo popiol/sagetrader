@@ -191,18 +191,18 @@ class StocksSimulator(gym.Env):
         confidence = action[0]
         rel_buy_price = self.relative_price_decode(action[1] - 0.2)
         rel_sell_price = self.relative_price_decode(action[2] + 0.2)
-        self.std_confidence = (
-            self.std_confidence * 0.999 + abs(confidence - self.avg_confidence) * 0.001
-            if self.avg_confidence is not None and self.std_confidence is not None
-            else 0
-        )
-        self.avg_confidence = (
-            self.avg_confidence * 0.999 + confidence * 0.001
-            if self.avg_confidence is not None
-            else confidence
-        )
-
+        
         if self.last_event_type == self.HIST_EVENT:
+            self.std_confidence = (
+                self.std_confidence * 0.999 + abs(confidence - self.avg_confidence) * 0.001
+                if self.avg_confidence is not None and self.std_confidence is not None
+                else 0
+            )
+            self.avg_confidence = (
+                self.avg_confidence * 0.999 + confidence * 0.001
+                if self.avg_confidence is not None
+                else confidence
+            )
             if self.prev_dt is None or self.dt.day != self.prev_dt.day:
                 self.watchlist = []
                 self.n_processed = 0
