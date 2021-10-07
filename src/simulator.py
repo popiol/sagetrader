@@ -234,7 +234,7 @@ class StocksSimulator(gym.Env):
                 n_shares = item["n_shares"]
                 self.place_order(self.company, n_shares, False, rel_sell_price)
             else:
-                budget = self.get_free_funds() * confidence
+                budget = min(self.get_free_funds(), self.get_capital() * confidence)
                 comp_price = self.get_current_price(self.company)
                 buy_price = (1 + rel_buy_price) * comp_price
                 n_shares = math.floor(budget / buy_price)
