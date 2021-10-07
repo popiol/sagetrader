@@ -224,7 +224,7 @@ class StocksSimulator(gym.Env):
                 and self.company not in self.watchlist
             ):
                 self.watchlist.append(self.company)
-                common.log("Hist comp processed:", self.n_processed)
+                # common.log("Hist comp processed:", self.n_processed)
 
             # common.log(self.dt, "watchlist size:", len(self.watchlist))
 
