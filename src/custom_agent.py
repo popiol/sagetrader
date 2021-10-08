@@ -396,6 +396,7 @@ class CustomAgent:
     def load_checkpoint(self, checkpoint_path: str):
         worker_id = None
         if "-" in checkpoint_path:
-            worker_id = checkpoint_path.split("-")[-1].split(".")[0]
+            worker_id = "-".join(checkpoint_path.split("-")[1:]).split(".")[0]
+            self.worker_id = worker_id
         extra_data = pickle.load(open(checkpoint_path, "rb"))
         self.__setstate__(extra_data, worker_id)

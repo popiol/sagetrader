@@ -16,3 +16,4 @@ config.yml
 config.sh
 logs/*
 !logs/.placeholder
+models/

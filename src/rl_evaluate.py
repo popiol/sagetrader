@@ -10,7 +10,7 @@ from simulator import StocksRTSimulator
 import common
 
 
-def main(worker_id):
+def main(worker_id, model):
     timestamp1 = time.time()
     data_dir = "data"
     train_file = f"{data_dir}/train.csv"
@@ -21,12 +21,21 @@ def main(worker_id):
         agent_file = agent_file_worker.replace("*", worker_id)
 
     env_config = {
-        "train_file": train_file,
+        "train_file": train_file
     }
+
+    if model is not None:
+        env_config["validate_max_steps"] = 500000
+        agent_file = model
+        path = model.split("/")
+        if len(path) > 1:
+            data_dir = "/".join(path[:-1])
 
     agent = CustomAgent(
         env=StocksRTSimulator, env_config=env_config, worker_id=worker_id
     )
+    if model is not None:
+        agent.model_dir = data_dir
     if os.path.isfile(agent_file):
         agent.load_checkpoint(agent_file)
     score = agent.evaluate(find_best=(worker_id is None))
@@ -39,9 +48,13 @@ def main(worker_id):
 
 if __name__ == "__main__":
     worker_id = None
+    model = None
     for arg in sys.argv:
         if arg.startswith("--worker_id"):
             worker_id = arg.split("=")[1]
             break
+        elif arg.startswith("--model"):
+            model = arg.split("=")[1]
+            break
 
-    main(worker_id)
+    main(worker_id, model)
