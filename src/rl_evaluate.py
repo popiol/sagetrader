@@ -25,7 +25,7 @@ def main(worker_id, model):
     }
 
     if model is not None:
-        env_config["validate_max_steps"] = 200000
+        env_config["validate_max_steps"] = 500000
         agent_file = model
         path = model.split("/")
         if len(path) > 1:

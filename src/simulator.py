@@ -205,8 +205,6 @@ class StocksSimulator(gym.Env):
                 else confidence
             )
 
-            common.log(confidence, self.avg_confidence, self.std_confidence)
-
             if self.prev_dt is None or self.dt.day != self.prev_dt.day:
                 self.watchlist = []
                 self.n_processed = 0
@@ -223,7 +221,7 @@ class StocksSimulator(gym.Env):
             if (
                 len(self.watchlist) < self.watchlist_size
                 and confidence > self.confidence_th
-                and confidence > self.avg_confidence + 3 * self.std_confidence
+                and confidence > self.avg_confidence + 2 * self.std_confidence
                 and not self.first_day
                 and self.company not in self.watchlist
             ):
