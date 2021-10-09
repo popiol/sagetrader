@@ -193,7 +193,8 @@ class StocksSimulator(gym.Env):
         rel_sell_price = self.relative_price_decode(action[2] + 0.2)
         
         if self.last_event_type == self.HIST_EVENT:
-            common.log(confidence)
+            # common.log(confidence)
+            
             self.std_confidence = (
                 self.std_confidence * 0.999 + abs(confidence - self.avg_confidence) * 0.001
                 if self.avg_confidence is not None and self.std_confidence is not None
@@ -227,7 +228,7 @@ class StocksSimulator(gym.Env):
                 self.watchlist.append(self.company)
                 # common.log("Hist comp processed:", self.n_processed)
 
-            common.log(self.watchlist)
+            # common.log(self.watchlist)
 
         if self.last_event_type == self.RT_EVENT:
             if self.company in self.portfolio:
