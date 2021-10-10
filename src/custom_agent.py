@@ -142,6 +142,7 @@ class CustomAgent:
         total = 0
         max_steps = self.train_max_steps if train else self.validate_max_steps
         seed = random.gauss(0, self.explore * 0.1)
+        explore = max(0.3, self.explore)
         for _ in range(max_steps + 1):
             self.niter += 1
             x = self.transform_x(state)
@@ -153,10 +154,10 @@ class CustomAgent:
                 action = self.predict_action(x)
             else:
                 action = self.env.action_space.sample()
-            if train and random.random() < self.explore:
+            if train and random.random() < explore:
                 for val_i, val in enumerate(action):
                     action[val_i] = min(
-                        1, max(0, val + seed + random.gauss(0, self.explore * 0.1))
+                        1, max(0, val + seed + random.gauss(0, explore * 0.1))
                     )
             if train:
                 y = self.transform_y(action)
@@ -290,7 +291,7 @@ class CustomAgent:
                 )
             if hist_set["train_x"] and rt_set["train_x"]:
                 self.fitted = True
-            self.explore = max(0.3, self.explore * 0.9)
+            self.explore = self.explore * 0.9
         if self.max_total is None or total >= self.max_total:
             self.max_total = total
         return total

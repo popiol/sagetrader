@@ -1,4 +1,5 @@
 import os
+
 if os.getcwd().endswith("/src"):
     os.chdir("..")
 
@@ -11,10 +12,12 @@ import shutil
 import sys
 import glob
 import subprocess
+import datetime
 
 
-def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
+def main(rebuild, worker_id, n_workers):
     data_dir = "data"
+    best_models_dir = "models"
     if not os.path.isdir(data_dir):
         os.mkdir(data_dir)
 
@@ -22,115 +25,128 @@ def main(rebuild, worker_id, n_workers, n_iterations, max_steps):
     agent_file = f"{data_dir}/agent.dat"
     hist_model_file = f"{data_dir}/hist_model.h5"
     rt_model_file = f"{data_dir}/rt_model.h5"
-    train_file_remote = "data/all_hist.csv"
-    agent_file_remote = "data/agent.dat"
-    hist_model_file_remote = "data/hist_model.h5"
-    rt_model_file_remote = "data/rt_model.h5"
     agent_file_worker = f"{data_dir}/agent-*.dat"
     hist_model_file_worker = f"{data_dir}/hist_model-*.h5"
     rt_model_file_worker = f"{data_dir}/rt_model-*.h5"
+    agent_file_best = f"{data_dir}/agent-best.dat"
+    hist_model_file_best = f"{data_dir}/hist_model-best.h5"
+    rt_model_file_best = f"{data_dir}/rt_model-best.h5"
 
     n_workers = n_workers or 1
-    n_iterations = n_iterations or 1
-    max_steps = max_steps or 10000
     model_changed = False
 
     env_config = {
         "train_file": train_file,
     }
 
+    agent = CustomAgent(
+        env=StocksRTSimulator, env_config=env_config, worker_id=worker_id
+    )
+    if os.path.isfile(agent_file):
+        agent.load_checkpoint(agent_file)
+    if agent.explore < 0.1:
+        rebuild = True
+
     if worker_id is not None:
-        agent = CustomAgent(
-            env=StocksRTSimulator, env_config=env_config, worker_id=worker_id
-        )
-        if os.path.isfile(agent_file):
-            agent.load_checkpoint(agent_file)
         agent.train()
         score = agent.evaluate(quick=True)
         print("score:", score)
         return
 
-    if not rebuild:
-        common.s3_download_file(train_file_remote, train_file, if_not_exists=True)
-        common.s3_download_file(agent_file_remote, agent_file, if_not_exists=True)
-        common.s3_download_file(hist_model_file_remote, hist_model_file, if_not_exists=True)
-        common.s3_download_file(rt_model_file_remote, rt_model_file, if_not_exists=True)
-    else:
+    common.s3_download_file(train_file, if_not_exists=True)
+    if rebuild:
         if os.path.isfile(agent_file):
             os.remove(agent_file)
         if os.path.isfile(hist_model_file):
             os.remove(hist_model_file)
         if os.path.isfile(rt_model_file):
             os.remove(rt_model_file)
+        dt = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        agent_file_best2 = agent_file_best.replace(data_dir + "/", best_models_dir + "/").replace("best", "best-" + dt)
+        shutil.copyfile(
+            agent_file_best, agent_file_best2
+        )
+        hist_model_file_best2 = hist_model_file_best.replace(data_dir + "/", best_models_dir + "/").replace("best", "best-" + dt)
+        shutil.copyfile(
+            hist_model_file_best, hist_model_file_best2
+        )
+        rt_model_file_best2 = rt_model_file_best.replace(data_dir + "/", best_models_dir + "/").replace("best", "best-" + dt)
+        shutil.copyfile(
+            rt_model_file_best, rt_model_file_best2
+        )
+        common.s3_upload_file(agent_file_best2)
+        common.s3_upload_file(hist_model_file_best2)
+        common.s3_upload_file(rt_model_file_best2)
+        
 
-    for _ in range(n_iterations):
-        timestamp1 = time.time()
+    timestamp1 = time.time()
 
-        files = glob.glob(agent_file_worker)
-        files.extend(glob.glob(hist_model_file_worker))
-        files.extend(glob.glob(rt_model_file_worker))
-        for file in files:
-            if len(file.split("-")[1].split(".")[0]) >= 4:
-                continue
-            os.remove(file)
+    files = glob.glob(agent_file_worker)
+    files.extend(glob.glob(hist_model_file_worker))
+    files.extend(glob.glob(rt_model_file_worker))
+    for file in files:
+        if not rebuild and len(file.split("-")[1].split(".")[0]) >= 4:
+            continue
+        os.remove(file)
 
-        scores = [None] * n_workers
+    scores = [None] * n_workers
 
-        workers = []
-        for worker_id in range(n_workers):
-            cmd = [
-                "/usr/bin/python3",
-                "src/rl_train_ray.py",
-                "--worker",
-                str(worker_id),
-                "--max_steps",
-                str(max_steps),
-            ]
-            if rebuild:
-                cmd.append("--rebuild")
-            worker = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            workers.append(worker)
+    workers = []
+    for worker_id in range(n_workers):
+        cmd = [
+            "/usr/bin/python3",
+            "src/rl_train_ray.py",
+            "--worker",
+            str(worker_id)
+        ]
+        if rebuild:
+            cmd.append("--rebuild")
+        worker = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        workers.append(worker)
 
-        for worker_id, worker in enumerate(workers):
-            out, err = worker.communicate()
-            common.log(out)
-            try:
-                score = None
-                for line in out.split(b"\n"):
-                    line = line.strip()
-                    if line.startswith(b"score: "):
-                        score = float(line.split(b" ")[1])
-                        break
-            except ValueError:
-                score = None
-            scores[worker_id] = score
+    for worker_id, worker in enumerate(workers):
+        out, err = worker.communicate()
+        common.log(out)
+        try:
+            score = None
+            for line in out.split(b"\n"):
+                line = line.strip()
+                if line.startswith(b"score: "):
+                    score = float(line.split(b" ")[1])
+                    break
+        except ValueError:
+            score = None
+        scores[worker_id] = score
 
-        common.log("Scores:", scores)
-        best_worker = None
-        best_score = None
-        for worker_i, score in enumerate(scores):
-            if score is not None and (best_score is None or score > best_score):
-                best_score = score
-                best_worker = str(worker_i)
-        if best_worker is not None:
-            common.log(hist_model_file_worker.replace("*", best_worker), "->", hist_model_file)
-            shutil.copyfile(hist_model_file_worker.replace("*", best_worker), hist_model_file)
-            common.log(rt_model_file_worker.replace("*", best_worker), "->", rt_model_file)
-            shutil.copyfile(rt_model_file_worker.replace("*", best_worker), rt_model_file)
-            shutil.copyfile(agent_file_worker.replace("*", best_worker), agent_file)
-            model_changed = True
+    common.log("Scores:", scores)
+    best_worker = None
+    best_score = None
+    for worker_i, score in enumerate(scores):
+        if score is not None and (best_score is None or score > best_score):
+            best_score = score
+            best_worker = str(worker_i)
+    if best_worker is not None:
+        common.log(
+            hist_model_file_worker.replace("*", best_worker), "->", hist_model_file
+        )
+        shutil.copyfile(
+            hist_model_file_worker.replace("*", best_worker), hist_model_file
+        )
+        common.log(
+            rt_model_file_worker.replace("*", best_worker), "->", rt_model_file
+        )
+        shutil.copyfile(
+            rt_model_file_worker.replace("*", best_worker), rt_model_file
+        )
+        shutil.copyfile(agent_file_worker.replace("*", best_worker), agent_file)
+        model_changed = True
 
-        timestamp2 = time.time()
-        common.log("Execution time:", timestamp2 - timestamp1)
-
-        if model_changed and not rebuild:
-            common.s3_upload_file(agent_file, agent_file_remote)
-            common.s3_upload_file(hist_model_file, hist_model_file_remote)
-            common.s3_upload_file(rt_model_file, rt_model_file_remote)
+    timestamp2 = time.time()
+    common.log("Execution time:", timestamp2 - timestamp1)
 
 
 if __name__ == "__main__":
@@ -147,14 +163,8 @@ if __name__ == "__main__":
             add_to = ["worker"]
         elif arg == "--n_workers":
             add_to = ["n_workers"]
-        elif arg == "--n_iterations":
-            add_to = ["n_iterations"]
-        elif arg == "--max_steps":
-            add_to = ["max_steps"]
-
+        
     worker_id = params.get("worker")
     n_workers = int(params["n_workers"]) if "n_workers" in params else None
-    n_iterations = int(params["n_iterations"]) if "n_iterations" in params else None
-    max_steps = int(params["max_steps"]) if "max_steps" in params else None
 
-    main(rebuild, worker_id, n_workers, n_iterations, max_steps)
+    main(rebuild, worker_id, n_workers)
