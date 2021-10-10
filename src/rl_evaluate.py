@@ -25,17 +25,18 @@ def main(worker_id, model, master):
 
     if master:
         files = glob.glob(winners_dir + "/*.dat")
-        files.append(glob.glob(winners_dir + "/*.h5"))
+        files.extend(glob.glob(winners_dir + "/*.h5"))
         for file in files:
             os.remove(file)
         files = common.s3_find_objects(winners_dir + "/")
-        files.sort(key=lambda x: x.last_modified, reverse=True)
-        for file in files[:10]:
-            common.s3_download_file(
-                file.key, file.key.replace(winners_dir + "/", best_models_dir + "/")
-            )
-        for file in files[10:]:
-            common.s3_delete_file(file.key)
+        if files:
+            files.sort(key=lambda x: x.last_modified, reverse=True)
+            for file in files[:10]:
+                common.s3_download_file(
+                    file.key, file.key.replace(winners_dir + "/", best_models_dir + "/")
+                )
+            for file in files[10:]:
+                common.s3_delete_file(file.key)
         agent_files = []
         workers = []
         scores = []
@@ -86,7 +87,7 @@ def main(worker_id, model, master):
             common.s3_upload_file(best_agent2)
             common.s3_delete_file(best_agent)
             files = glob.glob(best_models_dir + "/*.dat")
-            files.append(glob.glob(best_models_dir + "/*.h5"))
+            files.extend(glob.glob(best_models_dir + "/*.h5"))
             for file in files:
                 file2 = file.replace(
                     best_models_dir + "/", best_models_dir + "/archive/"
