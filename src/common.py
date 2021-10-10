@@ -113,6 +113,14 @@ def s3_download_file(
             raise
 
 
+def s3_delete_file(obj_key):
+    return main_bucket.delete_objects(Delete={"Objects": [{"Key": obj_key}]})
+
+
+def s3_find_objects(prefix):
+    objects = main_bucket.objects.filter(Prefix=prefix)
+
+
 company_list_filename = "data/company_list.csv"
 hist_quotes_filename = "data/hist/{}/{}/{}.csv"
 rt_quotes_filename = "data/real_time/{}/{}/{}.csv"

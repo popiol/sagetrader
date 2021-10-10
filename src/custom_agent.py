@@ -30,6 +30,7 @@ class CustomAgent:
         self.explore = 1
         self.fitted = False
         self.best_score = None
+        self.score_hist = []
         self.model_dir = "data"
         self.model_changed = False
         self.worker_id = (
@@ -324,6 +325,8 @@ class CustomAgent:
         common.log("Current score:", total)
         if self.best_score is None or total >= self.best_score or not quick:
             self.best_score = total
+        if not quick:
+            self.score_hist.append(total)
         self.save_checkpoint(self.model_dir)
         if find_best:
             global_best = None
@@ -363,6 +366,7 @@ class CustomAgent:
         )
         return {
             "best_score": self.best_score,
+            "score_hist": self.score_hist,
             "explore": self.explore,
             "fitted": self.fitted,
             "avg_total": self.avg_total,
@@ -380,6 +384,7 @@ class CustomAgent:
         self.hist_model = keras.models.load_model(hist_model_file, compile=True)
         self.rt_model = keras.models.load_model(rt_model_file, compile=True)
         self.best_score = state["best_score"]
+        self.score_hist = state.get("score_hist")
         self.explore = state["explore"]
         self.fitted = state["fitted"]
         self.avg_total = state.get("avg_total")

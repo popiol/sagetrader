@@ -17,11 +17,25 @@ def main(worker_id, model, master):
     timestamp1 = time.time()
     data_dir = "data"
     best_models_dir = "models"
-    train_file = f"{data_dir}/train.csv"
-    agent_file = f"{data_dir}/agent.dat"
-    agent_file_worker = f"{data_dir}/agent-*.dat"
+    winners_dir = best_models_dir + "/winners"
+    archive_dir = best_models_dir + "/archive"
+    train_file = data_dir + "/train.csv"
+    agent_file = data_dir + "/agent.dat"
+    agent_file_worker = data_dir + "/agent-*.dat"
 
     if master:
+        files = glob.glob(winners_dir + "/*.dat")
+        files.append(glob.glob(winners_dir + "/*.h5"))
+        for file in files:
+            os.remove(file)
+        files = common.s3_find_objects(winners_dir + "/")
+        files.sort(key=lambda x: x.last_modified, reverse=True)
+        for file in files[:10]:
+            common.s3_download_file(
+                file, file.replace(winners_dir + "/", best_models_dir + "/")
+            )
+        for file in files[10:]:
+            common.s3_delete_file(file)
         agent_files = []
         workers = []
         scores = []
@@ -62,18 +76,31 @@ def main(worker_id, model, master):
                 best_score = score
                 best_agent = agent_files[worker_i]
         if best_agent is not None:
-            shutil.copyfile(
-                best_agent, best_agent.replace(best_models_dir + "/", best_models_dir + "/winners/")
-            )
+            if not os.path.isdir(winners_dir):
+                os.makedirs(winners_dir)
+            if not os.path.isdir(archive_dir):
+                os.makedirs(archive_dir)
+            best_agent2 = best_agent.replace(best_models_dir + "/", winners_dir + "/")
+            common.log(best_agent, "->", best_agent2)
+            shutil.move(best_agent, best_agent2)
+            common.s3_upload_file(best_agent2)
+            common.s3_delete_file(best_agent)
+            files = glob.glob(best_models_dir + "/*.dat")
+            files.append(glob.glob(best_models_dir + "/*.h5"))
+            for file in files:
+                file2 = file.replace(
+                    best_models_dir + "/", best_models_dir + "/archive/"
+                )
+                shutil.move(file, file2)
+                common.s3_upload_file(file2)
+                common.s3_delete_file(file)
     else:
         common.s3_download_file(train_file, if_not_exists=True)
 
         if worker_id is not None:
             agent_file = agent_file_worker.replace("*", worker_id)
 
-        env_config = {
-            "train_file": train_file
-        }
+        env_config = {"train_file": train_file}
 
         if model is not None:
             env_config["validate_max_steps"] = 500000
