@@ -32,10 +32,10 @@ def main(worker_id, model, master):
         files.sort(key=lambda x: x.last_modified, reverse=True)
         for file in files[:10]:
             common.s3_download_file(
-                file, file.replace(winners_dir + "/", best_models_dir + "/")
+                file.key, file.key.replace(winners_dir + "/", best_models_dir + "/")
             )
         for file in files[10:]:
-            common.s3_delete_file(file)
+            common.s3_delete_file(file.key)
         agent_files = []
         workers = []
         scores = []
