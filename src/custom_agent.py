@@ -288,7 +288,8 @@ class CustomAgent:
                     rt_set["train_y"],
                     rt_set["weights"],
                 )
-            self.fitted = True
+            if hist_set["train_x"] and rt_set["train_x"]:
+                self.fitted = True
             self.explore = max(0.3, self.explore * 0.99)
         if self.max_total is None or total >= self.max_total:
             self.max_total = total
