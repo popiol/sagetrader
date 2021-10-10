@@ -262,7 +262,7 @@ class CustomAgent:
                             trainset is rt_set and dt >= sell_dt
                         ):
                             break
-                w = int(good) * 0.85 + 0.15
+                w = int(good) * 0.8 + 0.2
                 if hist_train_x is not None:
                     hist_set["train_x"].append(hist_train_x)
                     hist_set["train_y"].append(hist_train_y)
@@ -290,7 +290,7 @@ class CustomAgent:
                 )
             if hist_set["train_x"] and rt_set["train_x"]:
                 self.fitted = True
-            self.explore = max(0.3, self.explore * 0.99)
+            self.explore = max(0.3, self.explore * 0.9)
         if self.max_total is None or total >= self.max_total:
             self.max_total = total
         return total
@@ -325,7 +325,7 @@ class CustomAgent:
         common.log("Current score:", total)
         if self.best_score is None or total >= self.best_score or not quick:
             self.best_score = total
-            self.save_checkpoint(self.model_dir)
+        self.save_checkpoint(self.model_dir)
         if find_best:
             global_best = None
             for agent_file in glob.iglob(self.model_dir + "/agent-????*.dat"):
