@@ -324,7 +324,7 @@ class CustomAgent:
         common.log("Current score:", total)
         if self.best_score is None or total >= self.best_score or not quick:
             self.best_score = total
-        self.save_checkpoint(self.model_dir)
+            self.save_checkpoint(self.model_dir)
         if find_best:
             global_best = None
             for agent_file in glob.iglob(self.model_dir + "/agent-????*.dat"):
