@@ -384,7 +384,7 @@ class CustomAgent:
         self.hist_model = keras.models.load_model(hist_model_file, compile=True)
         self.rt_model = keras.models.load_model(rt_model_file, compile=True)
         self.best_score = state["best_score"]
-        self.score_hist = state.get("score_hist")
+        self.score_hist = state.get("score_hist", [])
         self.explore = state["explore"]
         self.fitted = state["fitted"]
         self.avg_total = state.get("avg_total")

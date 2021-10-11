@@ -104,7 +104,7 @@ def main(worker_id, model, master):
         env_config = {"train_file": train_file}
 
         if model is not None:
-            env_config["validate_max_steps"] = 500000
+            env_config["validate_max_steps"] = 10000 # 500000
             agent_file = model
             path = model.split("/")
             if len(path) > 1:
