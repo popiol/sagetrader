@@ -27,15 +27,26 @@ def main(worker_id, model, master):
         files.extend(glob.glob(winners_dir + "/*.h5"))
         for file in files:
             os.remove(file)
-        files = common.s3_find_objects(winners_dir + "/")
+        files = common.s3_find_objects(winners_dir + "/agent*dat")
         if files:
             files.sort(key=lambda x: x.last_modified, reverse=True)
-            for file in files[:30]:
+            for file in files[:10]:
+                model_id = common.model_id_from_filename(file.key)
                 common.s3_download_file(
-                    file.key, file.key.replace(winners_dir + "/", best_models_dir + "/"), if_not_exists=True
+                    f"{winners_dir}/agent-{model_id}.dat", f"{best_models_dir}/agent-{model_id}.dat", if_not_exists=True
                 )
-            for file in files[30:]:
-                common.s3_delete_file(file.key)
+                common.s3_download_file(
+                    f"{winners_dir}/hist_model-{model_id}.h5", f"{best_models_dir}/hist_model-{model_id}.h5", if_not_exists=True
+                )
+                common.s3_download_file(
+                    f"{winners_dir}/rt_model-{model_id}.h5", f"{best_models_dir}/rt_model-{model_id}.h5", if_not_exists=True
+                )
+                
+            for file in files[10:]:
+                model_id = common.model_id_from_filename(file.key)
+                common.s3_delete_file(f"{winners_dir}/agent-{model_id}.dat")
+                common.s3_delete_file(f"{winners_dir}/hist_model-{model_id}.h5")
+                common.s3_delete_file(f"{winners_dir}/rt_model-{model_id}.h5")
         agent_files = []
         workers = []
         scores = []
@@ -80,8 +91,8 @@ def main(worker_id, model, master):
                 os.makedirs(winners_dir)
             if not os.path.isdir(archive_dir):
                 os.makedirs(archive_dir)
-            worker_id = "-".join(best_agent.split("-")[1:]).split(".")[0]
-            for file in glob.iglob(f"{best_models_dir}/*{worker_id}*"):
+            model_id = common.model_id_from_filename(best_agent)
+            for file in glob.iglob(f"{best_models_dir}/*{model_id}*"):
                 file2 = file.replace(best_models_dir + "/", winners_dir + "/")
                 common.log(file, "->", file2)
                 shutil.move(file, file2)
@@ -113,8 +124,6 @@ def main(worker_id, model, master):
         agent = CustomAgent(
             env=StocksRTSimulator, env_config=env_config, worker_id=worker_id
         )
-        if model is not None:
-            agent.model_dir = data_dir
         if os.path.isfile(agent_file):
             agent.load_checkpoint(agent_file)
         score = agent.evaluate(find_best=(worker_id is None))

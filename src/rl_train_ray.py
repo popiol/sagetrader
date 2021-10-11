@@ -22,6 +22,7 @@ def main(rebuild, worker_id, n_workers):
     best_models_dir = common.best_models_dir
     if not os.path.isdir(best_models_dir):
         os.mkdir(best_models_dir)
+    winners_dir = common.winners_dir
     agent_file = common.agent_file
     hist_model_file = common.hist_model_file
     rt_model_file = common.rt_model_file
@@ -33,8 +34,7 @@ def main(rebuild, worker_id, n_workers):
     rt_model_file_best = common.rt_model_file_best
 
     n_workers = n_workers or 1
-    model_changed = False
-
+    
     env_config = {}
 
     agent = CustomAgent(
@@ -46,6 +46,20 @@ def main(rebuild, worker_id, n_workers):
         rebuild = True
 
     if worker_id is not None:
+        if not os.path.isfile(agent_file):
+            max_timestamp = None
+            for file in glob.iglob(winners_dir + "/agent*"):
+                timestamp = os.path.getmtime(file)
+                if max_timestamp is None or timestamp > max_timestamp:
+                    max_timestamp = timestamp
+                    last_winner = file
+            if max_timestamp is not None:
+                tmp_agent = CustomAgent(
+                    env=StocksRTSimulator, env_config=env_config
+                )
+                tmp_agent.load_checkpoint(last_winner)
+                agent.hist_model = agent.randomly_change_model(tmp_agent.hist_model)
+                agent.rt_model = agent.randomly_change_model(tmp_agent.rt_model)
         agent.train()
         score = agent.evaluate(quick=True)
         print("score:", score)
@@ -140,7 +154,6 @@ def main(rebuild, worker_id, n_workers):
             rt_model_file_worker.replace("*", best_worker), rt_model_file
         )
         shutil.copyfile(agent_file_worker.replace("*", best_worker), agent_file)
-        model_changed = True
 
     timestamp2 = time.time()
     common.log("Execution time:", timestamp2 - timestamp1)

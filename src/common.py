@@ -365,3 +365,7 @@ def price_to_float(x):
     x = re.sub(r"[^0-9]$", "", x)
     x = x.replace(",", "")
     return float(x)
+
+
+def model_id_from_filename(filename):
+    return "-".join(filename.split("/")[-1].split("-")[1:]).split(".")[0]

@@ -2,11 +2,9 @@ import datetime
 import gym
 import random
 import numpy as np
-from gym.spaces.discrete import Discrete
 import tensorflow.keras as keras
 import pickle
 import common
-from tensorflow import saved_model
 import glob
 import shutil
 
@@ -46,8 +44,9 @@ class CustomAgent:
         l = inputs
         l = keras.layers.LSTM(self.max_quotes)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Dense(100, activation="relu")(l)
+        l = keras.layers.Dense(50, activation="relu")(l)
+        l = keras.layers.Dense(20, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         outputs = keras.layers.Dense(1, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
@@ -62,8 +61,9 @@ class CustomAgent:
         l = inputs
         l = keras.layers.LSTM(self.max_quotes)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Dense(100, activation="relu")(l)
+        l = keras.layers.Dense(50, activation="relu")(l)
+        l = keras.layers.Dense(20, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         outputs = keras.layers.Dense(3, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
@@ -71,6 +71,28 @@ class CustomAgent:
             optimizer=keras.optimizers.Nadam(learning_rate=0.001),
             loss="mean_squared_logarithmic_error",
         )
+        return model
+
+    def randomly_change_model(self, old_model):
+        inputs = keras.layers.Input(shape=old_model.layers[0].output_shape[0][1:])
+        l = inputs
+        l = keras.layers.LSTM(old_model.layers[1].output_shape[1])(l)
+        for layer in old_model.layers[2:-1]:
+            if random.randrange(10):
+                shape = layer.output_shape[1]
+                shape = max(10, shape + round(random.gauss(0, shape/4)))
+                l = keras.layers.Dense(shape, activation="relu")(l)
+            if not random.randrange(10):
+                shape = random.randint(10, 100)
+                l = keras.layers.Dense(shape, activation="relu")(l)
+        outputs = keras.layers.Dense(old_model.layers[-1].output_shape[1], activation="sigmoid")(l)
+        model = keras.Model(inputs=inputs, outputs=outputs)
+        model.compile(
+            optimizer=keras.optimizers.Nadam(learning_rate=0.001),
+            loss="mean_squared_logarithmic_error",
+        )
+        for layer in model.layers:
+            common.log(layer.__class__.__name__, layer.output_shape)
         return model
 
     def predict_action(self, x):
@@ -402,8 +424,9 @@ class CustomAgent:
 
     def load_checkpoint(self, checkpoint_path: str):
         worker_id = None
+        self.model_dir = "/".join(checkpoint_path.split("/")[:-1])
         if "-" in checkpoint_path:
-            worker_id = "-".join(checkpoint_path.split("-")[1:]).split(".")[0]
+            worker_id = common.model_id_from_filename(checkpoint_path)
             self.worker_id = worker_id
         extra_data = pickle.load(open(checkpoint_path, "rb"))
         self.__setstate__(extra_data, worker_id)
