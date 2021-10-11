@@ -21,7 +21,6 @@ def main(rebuild, worker_id, n_workers):
     if not os.path.isdir(data_dir):
         os.mkdir(data_dir)
 
-    train_file = f"{data_dir}/train.csv"
     agent_file = f"{data_dir}/agent.dat"
     hist_model_file = f"{data_dir}/hist_model.h5"
     rt_model_file = f"{data_dir}/rt_model.h5"
@@ -35,9 +34,7 @@ def main(rebuild, worker_id, n_workers):
     n_workers = n_workers or 1
     model_changed = False
 
-    env_config = {
-        "train_file": train_file,
-    }
+    env_config = {}
 
     agent = CustomAgent(
         env=StocksRTSimulator, env_config=env_config, worker_id=worker_id
@@ -53,7 +50,6 @@ def main(rebuild, worker_id, n_workers):
         print("score:", score)
         return
 
-    common.s3_download_file(train_file, if_not_exists=True)
     if rebuild:
         if os.path.isfile(agent_file):
             os.remove(agent_file)
