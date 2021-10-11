@@ -80,12 +80,14 @@ class CustomAgent:
         for layer in old_model.layers[2:-1]:
             if random.randrange(10):
                 shape = layer.output_shape[1]
-                shape = max(10, shape + round(random.gauss(0, shape/4)))
+                shape = max(10, shape + round(random.gauss(0, shape / 4)))
                 l = keras.layers.Dense(shape, activation="relu")(l)
             if not random.randrange(10):
                 shape = random.randint(10, 100)
                 l = keras.layers.Dense(shape, activation="relu")(l)
-        outputs = keras.layers.Dense(old_model.layers[-1].output_shape[1], activation="sigmoid")(l)
+        outputs = keras.layers.Dense(
+            old_model.layers[-1].output_shape[1], activation="sigmoid"
+        )(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
             optimizer=keras.optimizers.Nadam(learning_rate=0.001),
@@ -284,7 +286,8 @@ class CustomAgent:
                             trainset is rt_set and dt >= sell_dt
                         ):
                             break
-                w = int(good) * 0.8 + 0.2
+                c = random.uniform(0.8, 0.85)
+                w = int(good) * c + (1 - c)
                 if hist_train_x is not None:
                     hist_set["train_x"].append(hist_train_x)
                     hist_set["train_y"].append(hist_train_y)
