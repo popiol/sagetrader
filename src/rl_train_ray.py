@@ -16,20 +16,21 @@ import datetime
 
 
 def main(rebuild, worker_id, n_workers):
-    data_dir = "data"
-    best_models_dir = "models"
+    data_dir = common.data_dir
     if not os.path.isdir(data_dir):
         os.mkdir(data_dir)
-
-    agent_file = f"{data_dir}/agent.dat"
-    hist_model_file = f"{data_dir}/hist_model.h5"
-    rt_model_file = f"{data_dir}/rt_model.h5"
-    agent_file_worker = f"{data_dir}/agent-*.dat"
-    hist_model_file_worker = f"{data_dir}/hist_model-*.h5"
-    rt_model_file_worker = f"{data_dir}/rt_model-*.h5"
-    agent_file_best = f"{data_dir}/agent-best.dat"
-    hist_model_file_best = f"{data_dir}/hist_model-best.h5"
-    rt_model_file_best = f"{data_dir}/rt_model-best.h5"
+    best_models_dir = common.best_models_dir
+    if not os.path.isdir(best_models_dir):
+        os.mkdir(best_models_dir)
+    agent_file = common.agent_file
+    hist_model_file = common.hist_model_file
+    rt_model_file = common.rt_model_file
+    agent_file_worker = common.agent_file_worker
+    hist_model_file_worker = common.hist_model_file_worker
+    rt_model_file_worker = common.rt_model_file_worker
+    agent_file_best = common.agent_file_best
+    hist_model_file_best = common.hist_model_file_best
+    rt_model_file_best = common.rt_model_file_best
 
     n_workers = n_workers or 1
     model_changed = False

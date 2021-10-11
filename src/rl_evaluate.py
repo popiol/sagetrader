@@ -15,12 +15,12 @@ import shutil
 
 def main(worker_id, model, master):
     timestamp1 = time.time()
-    data_dir = "data"
-    best_models_dir = "models"
-    winners_dir = best_models_dir + "/winners"
-    archive_dir = best_models_dir + "/archive"
-    agent_file = data_dir + "/agent.dat"
-    agent_file_worker = data_dir + "/agent-*.dat"
+    data_dir = common.data_dir
+    best_models_dir = common.best_models_dir
+    winners_dir = common.winners_dir
+    archive_dir = common.archive_dir
+    agent_file = common.agent_file
+    agent_file_worker = common.agent_file_worker
 
     if master:
         files = glob.glob(winners_dir + "/*.dat")
@@ -30,11 +30,11 @@ def main(worker_id, model, master):
         files = common.s3_find_objects(winners_dir + "/")
         if files:
             files.sort(key=lambda x: x.last_modified, reverse=True)
-            for file in files[:10]:
+            for file in files[:30]:
                 common.s3_download_file(
                     file.key, file.key.replace(winners_dir + "/", best_models_dir + "/"), if_not_exists=True
                 )
-            for file in files[10:]:
+            for file in files[30:]:
                 common.s3_delete_file(file.key)
         agent_files = []
         workers = []

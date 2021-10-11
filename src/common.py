@@ -20,6 +20,20 @@ log_timestamp_format = "%Y-%m-%d %H:%M:%S"
 log_filename = None
 prev_log_filename = None
 
+data_dir = "data"
+best_models_dir = "models"
+winners_dir = best_models_dir + "/winners"
+archive_dir = best_models_dir + "/archive"
+agent_file = data_dir + "/agent.dat"
+agent_file_worker = data_dir + "/agent-*.dat"
+hist_model_file = data_dir + "/hist_model.h5"
+rt_model_file = data_dir + "/rt_model.h5"
+hist_model_file_worker = data_dir + "/hist_model-*.h5"
+rt_model_file_worker = data_dir + "/rt_model-*.h5"
+agent_file_best = data_dir + "/agent-best.dat"
+hist_model_file_best = data_dir + "/hist_model-best.h5"
+rt_model_file_best = data_dir + "/rt_model-best.h5"
+
 
 def getLogger():
     global log_filename
