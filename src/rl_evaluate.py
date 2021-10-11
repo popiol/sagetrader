@@ -144,6 +144,7 @@ if __name__ == "__main__":
             worker_id = arg.split("=")[1]
         elif arg.startswith("--model"):
             model = arg.split("=")[1]
+            common.log("model:", model)
         elif arg.startswith("--master"):
             master = True
 
