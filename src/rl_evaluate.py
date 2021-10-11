@@ -80,16 +80,9 @@ def main(worker_id, model, master):
                 os.makedirs(winners_dir)
             if not os.path.isdir(archive_dir):
                 os.makedirs(archive_dir)
-            best_agent2 = best_agent.replace(best_models_dir + "/", winners_dir + "/")
-            best_hist_model = best_agent.replace("agent", "hist_model")
-            best_hist_model2 = best_agent2.replace("agent", "hist_model")
-            best_rt_model = best_agent.replace("agent", "rt_model")
-            best_rt_model2 = best_agent2.replace("agent", "rt_model")
-            for file, file2 in [
-                (best_agent, best_agent2),
-                (best_hist_model, best_hist_model),
-                (best_rt_model, best_rt_model2),
-            ]:
+            worker_id = "-".join(best_agent.split("-")[1:]).split(".")[0]
+            for file in glob.iglob(f"{best_models_dir}/*{worker_id}*"):
+                file2 = file.replace(best_models_dir + "/", winners_dir + "/")
                 common.log(file, "->", file2)
                 shutil.move(file, file2)
                 common.s3_upload_file(file2)
