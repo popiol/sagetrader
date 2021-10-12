@@ -356,7 +356,8 @@ class CustomAgent:
         if find_best:
             global_best = None
             for agent_file in glob.iglob(self.model_dir + "/agent-????*.dat"):
-                agent_data = pickle.load(open(agent_file, "rb"))
+                with open(agent_file, "rb") as f:
+                    agent_data = pickle.load(f)
                 common.log(agent_file, agent_data["best_score"])
                 if global_best is None or agent_data["best_score"] > global_best:
                     best_agent = agent_file
@@ -421,7 +422,8 @@ class CustomAgent:
         if checkpoint_dir is None:
             checkpoint_dir = self.model_dir
         checkpoint_path = f"{checkpoint_dir}/agent-{self.worker_id}.dat"
-        pickle.dump(self.__getstate__(), open(checkpoint_path, "wb"))
+        with open(checkpoint_path, "wb") as f:
+            pickle.dump(self.__getstate__(), f)
         self.model_changed = True
         return checkpoint_path
 
@@ -431,5 +433,6 @@ class CustomAgent:
         if "-" in checkpoint_path:
             worker_id = common.model_id_from_filename(checkpoint_path)
             self.worker_id = worker_id
-        extra_data = pickle.load(open(checkpoint_path, "rb"))
+        with open(checkpoint_path, "rb") as f:
+            extra_data = pickle.load(f)
         self.__setstate__(extra_data, worker_id)
