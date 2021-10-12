@@ -46,8 +46,7 @@ def getLogger():
     logger = logging.getLogger(name)
     dt = datetime.datetime.now().strftime(logfile_timestamp_format)
     log_filename = f"logs/{name}_{dt}.log"
-    if not os.path.isdir("logs"):
-        os.mkdir("logs")
+    os.makedirs("logs", exist_ok=True)
     handler = logging.FileHandler(log_filename, "a")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
@@ -187,8 +186,7 @@ def save_hist_quotes(conid, month, quotes, append):
     month = month[4:]
     filename = hist_quotes_filename.format(conid, year, month)
     dir = os.path.dirname(filename)
-    if not os.path.isdir(dir):
-        os.makedirs(dir)
+    os.makedirs(dir, exist_ok=True)
     mode = "a" if append else "w"
     if append and os.path.isfile(filename):
         with open(filename, "r") as f:
@@ -211,8 +209,7 @@ def save_rt_quotes(day, quotes):
     day = day[6:]
     filename = rt_quotes_filename.format(year, month, day)
     dir = os.path.dirname(filename)
-    if not os.path.isdir(dir):
-        os.makedirs(dir)
+    os.makedirs(dir, exist_ok=True)
     if os.path.isfile(filename):
         assert_new_timestamp(filename, quotes[0]["t"], quotes[0]["conidex"])
         add_header = False

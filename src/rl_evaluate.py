@@ -87,10 +87,8 @@ def main(worker_id, model, master):
                 best_score = score
                 best_agent = agent_files[worker_i]
         if best_agent is not None:
-            if not os.path.isdir(winners_dir):
-                os.makedirs(winners_dir)
-            if not os.path.isdir(archive_dir):
-                os.makedirs(archive_dir)
+            os.makedirs(winners_dir, exist_ok=True)
+            os.makedirs(archive_dir, exist_ok=True)
             model_id = common.model_id_from_filename(best_agent)
             for file in glob.iglob(f"{best_models_dir}/*{model_id}*"):
                 file2 = file.replace(best_models_dir + "/", winners_dir + "/")

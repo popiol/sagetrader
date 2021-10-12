@@ -80,7 +80,7 @@ class CustomAgent:
         for layer in old_model.layers[2:-1]:
             if random.randrange(10):
                 shape = layer.output_shape[1]
-                shape = max(10, shape + round(random.gauss(0, shape / 4)))
+                shape = max(10, shape + round(random.gauss(0, shape / 8)))
                 l = keras.layers.Dense(shape, activation="relu")(l)
             if not random.randrange(10):
                 shape = random.randint(10, 100)

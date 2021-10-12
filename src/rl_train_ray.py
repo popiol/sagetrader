@@ -17,11 +17,9 @@ import datetime
 
 def main(rebuild, worker_id, n_workers):
     data_dir = common.data_dir
-    if not os.path.isdir(data_dir):
-        os.mkdir(data_dir)
+    os.makedirs(data_dir, exist_ok=True)
     best_models_dir = common.best_models_dir
-    if not os.path.isdir(best_models_dir):
-        os.mkdir(best_models_dir)
+    os.makedirs(best_models_dir, exist_ok=True)
     winners_dir = common.winners_dir
     agent_file = common.agent_file
     hist_model_file = common.hist_model_file
