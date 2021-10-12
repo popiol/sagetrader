@@ -15,7 +15,6 @@ import shutil
 
 def main(worker_id, model, master):
     timestamp1 = time.time()
-    data_dir = common.data_dir
     best_models_dir = common.best_models_dir
     winners_dir = common.winners_dir
     archive_dir = common.archive_dir
@@ -115,16 +114,13 @@ def main(worker_id, model, master):
         if model is not None:
             env_config["validate_max_steps"] = 500000
             agent_file = model
-            path = model.split("/")
-            if len(path) > 1:
-                data_dir = "/".join(path[:-1])
-
+            
         agent = CustomAgent(
             env=StocksRTSimulator, env_config=env_config, worker_id=worker_id
         )
         if os.path.isfile(agent_file):
             agent.load_checkpoint(agent_file)
-        score = agent.evaluate(find_best=(worker_id is None))
+        score = agent.evaluate(find_best=(worker_id is None and model is None))
         print("score:", score)
         common.log("Score:", score)
         common.log("Bought:", agent.env.n_bought, "Sold:", agent.env.n_sold)
