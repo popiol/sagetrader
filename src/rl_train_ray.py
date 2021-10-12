@@ -13,6 +13,7 @@ import sys
 import glob
 import subprocess
 import datetime
+import pickle
 
 
 def main(rebuild, worker_id, n_workers):
@@ -70,22 +71,24 @@ def main(rebuild, worker_id, n_workers):
             os.remove(hist_model_file)
         if os.path.isfile(rt_model_file):
             os.remove(rt_model_file)
-        dt = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        agent_file_best2 = agent_file_best.replace(data_dir + "/", best_models_dir + "/").replace("best", "best-" + dt)
-        shutil.copyfile(
-            agent_file_best, agent_file_best2
-        )
-        hist_model_file_best2 = hist_model_file_best.replace(data_dir + "/", best_models_dir + "/").replace("best", "best-" + dt)
-        shutil.copyfile(
-            hist_model_file_best, hist_model_file_best2
-        )
-        rt_model_file_best2 = rt_model_file_best.replace(data_dir + "/", best_models_dir + "/").replace("best", "best-" + dt)
-        shutil.copyfile(
-            rt_model_file_best, rt_model_file_best2
-        )
-        common.s3_upload_file(agent_file_best2)
-        common.s3_upload_file(hist_model_file_best2)
-        common.s3_upload_file(rt_model_file_best2)
+        agent_data = pickle.load(open(agent_file_best, "rb"))
+        if agent_data["best_score"] > 0:
+            dt = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+            agent_file_best2 = agent_file_best.replace(data_dir + "/", best_models_dir + "/").replace("best", "best-" + dt)
+            shutil.copyfile(
+                agent_file_best, agent_file_best2
+            )
+            hist_model_file_best2 = hist_model_file_best.replace(data_dir + "/", best_models_dir + "/").replace("best", "best-" + dt)
+            shutil.copyfile(
+                hist_model_file_best, hist_model_file_best2
+            )
+            rt_model_file_best2 = rt_model_file_best.replace(data_dir + "/", best_models_dir + "/").replace("best", "best-" + dt)
+            shutil.copyfile(
+                rt_model_file_best, rt_model_file_best2
+            )
+            common.s3_upload_file(agent_file_best2)
+            common.s3_upload_file(hist_model_file_best2)
+            common.s3_upload_file(rt_model_file_best2)
         
 
     timestamp1 = time.time()
