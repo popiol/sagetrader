@@ -67,6 +67,7 @@ def main(worker_id, model, master):
             scores.append(None)
 
         for worker_i, worker in enumerate(workers):
+            common.log(agent_files[worker_i])
             out, err = worker.communicate()
             common.log(out)
             try:
