@@ -11,6 +11,7 @@ import common
 import subprocess
 import glob
 import shutil
+import random
 
 
 def main(worker_id, model, master):
@@ -26,11 +27,11 @@ def main(worker_id, model, master):
         files.extend(glob.glob(winners_dir + "/*.h5"))
         for file in files:
             os.remove(file)
-        common.log("prefix:", winners_dir + "/agent")
         files = common.s3_find_objects(winners_dir + "/agent")
         if files:
             files.sort(key=lambda x: x.last_modified, reverse=True)
-            for file in files[:10]:
+            last_files = random.sample(files[:10], min(3, len(files)))
+            for file in last_files:
                 model_id = common.model_id_from_filename(file.key)
                 common.s3_download_file(
                     f"{winners_dir}/agent-{model_id}.dat", f"{best_models_dir}/agent-{model_id}.dat", if_not_exists=True
