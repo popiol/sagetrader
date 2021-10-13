@@ -98,7 +98,8 @@ def main(rebuild, worker_id, n_workers):
     files.extend(glob.glob(hist_model_file_worker))
     files.extend(glob.glob(rt_model_file_worker))
     for file in files:
-        if not rebuild and len(file.split("-")[1].split(".")[0]) >= 4:
+        model_id = common.model_id_from_filename(file)
+        if not rebuild and len(model_id) >= 4:
             continue
         os.remove(file)
 

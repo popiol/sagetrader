@@ -89,12 +89,16 @@ class CustomAgent:
             old_model.layers[-1].output_shape[1], activation="sigmoid"
         )(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
+        lr = old_model.optimizer.lr.numpy() + random.gauss(0, 0.0001)
         model.compile(
-            optimizer=keras.optimizers.Nadam(learning_rate=0.001),
+            optimizer=keras.optimizers.Nadam(
+                learning_rate=lr
+            ),
             loss="mean_squared_logarithmic_error",
         )
         for layer in model.layers:
             common.log(layer.__class__.__name__, layer.output_shape)
+        common.log("Learning rate:", lr)
         return model
 
     def predict_action(self, x):
