@@ -89,11 +89,10 @@ class CustomAgent:
             old_model.layers[-1].output_shape[1], activation="sigmoid"
         )(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
-        lr = old_model.optimizer.lr.numpy() + random.gauss(0, 0.0001)
+        seed = random.gauss(0, 0.2)
+        lr = old_model.optimizer.lr.numpy() * (1 + seed if seed > 0 else 1 / (1 - seed))
         model.compile(
-            optimizer=keras.optimizers.Nadam(
-                learning_rate=lr
-            ),
+            optimizer=keras.optimizers.Nadam(learning_rate=lr),
             loss="mean_squared_logarithmic_error",
         )
         for layer in model.layers:
