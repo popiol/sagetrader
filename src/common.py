@@ -131,7 +131,7 @@ def s3_delete_file(obj_key):
 
 
 def s3_find_objects(prefix):
-    objects = main_bucket.objects.filter(Prefix=prefix)
+    return list(main_bucket.objects.filter(Prefix=prefix))
 
 
 company_list_filename = "data/company_list.csv"

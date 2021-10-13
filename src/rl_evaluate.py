@@ -26,7 +26,8 @@ def main(worker_id, model, master):
         files.extend(glob.glob(winners_dir + "/*.h5"))
         for file in files:
             os.remove(file)
-        files = common.s3_find_objects(winners_dir + "/agent*dat")
+        common.log("prefix:", winners_dir + "/agent")
+        files = common.s3_find_objects(winners_dir + "/agent")
         if files:
             files.sort(key=lambda x: x.last_modified, reverse=True)
             for file in files[:10]:
