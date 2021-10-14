@@ -84,11 +84,14 @@ def main(worker_id, model, master):
         common.log("Scores:", scores)
         best_agent = None
         best_score = None
+        bad_losers = []
         for worker_i, score in enumerate(scores):
             if score is not None and (best_score is None or score > best_score):
                 best_score = score
                 best_agent = agent_files[worker_i]
-        if best_agent is not None:
+            if score is not None and score < -2000000:
+                bad_losers.append(agent_files[worker_i])
+        if best_agent is not None and best_score > 0:
             os.makedirs(winners_dir, exist_ok=True)
             os.makedirs(archive_dir, exist_ok=True)
             model_id = common.model_id_from_filename(best_agent)
@@ -98,16 +101,21 @@ def main(worker_id, model, master):
                 shutil.move(file, file2)
                 common.s3_upload_file(file2)
                 common.s3_delete_file(file)
-            files = glob.glob(best_models_dir + "/*.dat")
-            files.extend(glob.glob(best_models_dir + "/*.h5"))
-            for file in files:
-                file2 = file.replace(
-                    best_models_dir + "/", best_models_dir + "/archive/"
-                )
-                common.log(file, "->", file2)
-                shutil.move(file, file2)
-                common.s3_upload_file(file2)
-                common.s3_delete_file(file)
+        files = glob.glob(best_models_dir + "/*.dat")
+        files.extend(glob.glob(best_models_dir + "/*.h5"))
+        for file in files:
+            file2 = file.replace(
+                best_models_dir + "/", best_models_dir + "/archive/"
+            )
+            common.log(file, "->", file2)
+            shutil.move(file, file2)
+            common.s3_upload_file(file2)
+            common.s3_delete_file(file)
+        for bad_loser in bad_losers:
+            model_id = common.model_id_from_filename(bad_loser)
+            for file in glob.iglob(f"{best_models_dir}/*{model_id}*"):
+                file2 = file.replace(best_models_dir + "/", winners_dir + "/")
+                common.s3_delete_file(file2)
     else:
         if worker_id is not None:
             agent_file = agent_file_worker.replace("*", worker_id)
