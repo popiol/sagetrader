@@ -65,6 +65,7 @@ def main(worker_id, model, master):
             agent_files.append(agent_file)
             workers.append(worker)
             scores.append(None)
+            time.sleep(1)
 
         for worker_i, worker in enumerate(workers):
             common.log(agent_files[worker_i])
