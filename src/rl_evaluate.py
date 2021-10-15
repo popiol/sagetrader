@@ -51,7 +51,9 @@ def main(worker_id, model, master):
         agent_files = []
         workers = []
         scores = []
+        worker_i = -1
         for agent_file in glob.iglob(best_models_dir + "/agent*.dat"):
+            worker_i += 1
             cmd = [
                 "/usr/bin/python3",
                 "src/rl_evaluate.py",
@@ -64,10 +66,6 @@ def main(worker_id, model, master):
             )
             agent_files.append(agent_file)
             workers.append(worker)
-            scores.append(None)
-            time.sleep(2)
-
-        for worker_i, worker in enumerate(workers):
             common.log(agent_files[worker_i])
             out, err = worker.communicate()
             err2 = ""
@@ -85,7 +83,7 @@ def main(worker_id, model, master):
                         break
             except ValueError:
                 score = None
-            scores[worker_i] = score
+            scores.append(score)
 
         common.log("Scores:", scores)
         best_agent = None
