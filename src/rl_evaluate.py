@@ -70,7 +70,11 @@ def main(worker_id, model, master):
         for worker_i, worker in enumerate(workers):
             common.log(agent_files[worker_i])
             out, err = worker.communicate()
-            common.log(err)
+            err2 = ""
+            for line in err.split("\n"):
+                if "Operation was cancelled" not in line and "libcudart" not in line:
+                    err2 += line + "\n"
+            common.log(err2)
             common.log(out)
             try:
                 score = None
