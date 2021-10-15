@@ -70,6 +70,7 @@ def main(worker_id, model, master):
         for worker_i, worker in enumerate(workers):
             common.log(agent_files[worker_i])
             out, err = worker.communicate()
+            common.log(err)
             common.log(out)
             try:
                 score = None
