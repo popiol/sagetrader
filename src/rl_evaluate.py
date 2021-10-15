@@ -72,7 +72,7 @@ def main(worker_id, model, master):
             out, err = worker.communicate()
             err2 = ""
             for line in err.split("\n"):
-                if "Operation was cancelled" not in line and "libcudart" not in line:
+                if "Operation was cancelled" not in line and "tensorflow/core/platform" not in line:
                     err2 += line + "\n"
             common.log(err2)
             common.log(out)
