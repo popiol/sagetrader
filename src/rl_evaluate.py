@@ -103,6 +103,11 @@ def main(worker_id, model, master):
                 shutil.move(file, file2)
                 common.s3_upload_file(file2)
                 common.s3_delete_file(file)
+        for bad_loser in bad_losers:
+            model_id = common.model_id_from_filename(bad_loser)
+            for file in glob.iglob(f"{best_models_dir}/*{model_id}*"):
+                file2 = file.replace(best_models_dir + "/", winners_dir + "/")
+                common.s3_delete_file(file2)
         files = glob.glob(best_models_dir + "/*.dat")
         files.extend(glob.glob(best_models_dir + "/*.h5"))
         for file in files:
@@ -113,11 +118,6 @@ def main(worker_id, model, master):
             shutil.move(file, file2)
             common.s3_upload_file(file2)
             common.s3_delete_file(file)
-        for bad_loser in bad_losers:
-            model_id = common.model_id_from_filename(bad_loser)
-            for file in glob.iglob(f"{best_models_dir}/*{model_id}*"):
-                file2 = file.replace(best_models_dir + "/", winners_dir + "/")
-                common.s3_delete_file(file2)
     else:
         if worker_id is not None:
             agent_file = agent_file_worker.replace("*", worker_id)
