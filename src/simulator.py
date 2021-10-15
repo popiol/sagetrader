@@ -430,7 +430,7 @@ class StocksRTSimulator(StocksSimulator):
                 else:
                     x *= self.size_scale[conid]
                 rt.append(x)
-            if len(self.rt_prices[conid] > 300):
+            if len(self.rt_prices[conid]) > 300:
                 self.rt_prices[conid] = self.rt_prices[conid][-300:]
             self.rt_prices[conid].append(rt)
             self.dt = self.dt.replace(
@@ -487,7 +487,7 @@ class StocksRTSimulator(StocksSimulator):
                     for key in self.bar_header:
                         bar.append(common.price_to_float(row[key]))
                     if conid in self.prices:
-                        if len(self.prices[conid] > 300):
+                        if len(self.prices[conid]) > 300:
                             self.prices[conid] = self.prices[conid][-300:]
                         self.prices[conid].append(bar)
                         self.timestamps[conid].append(dt.strftime(self.DT_FORMAT))
