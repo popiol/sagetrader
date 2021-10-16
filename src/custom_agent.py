@@ -74,14 +74,29 @@ class CustomAgent:
         return model
 
     def randomly_change_model(self, old_model):
+        for _ in range(random.randrange(10)+1):
+            random.randrange(10)
+            random.gauss(0, 0.5)
         inputs = keras.layers.Input(shape=old_model.layers[0].output_shape[0][1:])
         l = inputs
-        l = keras.layers.LSTM(old_model.layers[1].output_shape[1])(l)
+        shape = old_model.layers[1].output_shape[1]
+        l = keras.layers.LSTM(shape)(l)
+        prev_shape = shape
+        weights = []
         for layer in old_model.layers[2:-1]:
             if random.randrange(10):
-                shape = layer.output_shape[1]
-                shape = max(10, shape + round(random.gauss(0, shape / 8)))
+                old_shape = layer.output_shape[1]
+                shape = max(10, old_shape + round(random.gauss(0, old_shape / 8)))
                 l = keras.layers.Dense(shape, activation="relu")(l)
+                old_w = layer.get_weights()
+                w = old_w[0][:prev_shape, :shape]
+                new_w1 = np.zeros((prev_shape, shape))
+                new_w1[:len(w), :len(w[0])] = w
+                w = old_w[1][:shape]
+                new_w2 = np.zeros(shape)
+                new_w2[:len(w)] = w
+                weights.append([new_w1, new_w2])
+                prev_shape = shape
             if not random.randrange(10):
                 shape = random.randint(10, 100)
                 l = keras.layers.Dense(shape, activation="relu")(l)
@@ -89,6 +104,8 @@ class CustomAgent:
             old_model.layers[-1].output_shape[1], activation="sigmoid"
         )(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
+        for layer_i, layer in enumerate(model.layers[2:-1]):
+            layer.set_weights(weights[layer_i])
         seed = random.gauss(0, 0.5)
         lr = old_model.optimizer.lr.numpy() * (1 + seed if seed > 0 else 1 / (1 - seed))
         model.compile(

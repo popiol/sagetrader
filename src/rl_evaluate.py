@@ -30,7 +30,6 @@ def main(worker_id, model, master):
             os.remove(file)
         files = common.s3_find_objects(winners_dir + "/agent")
         if files:
-            files.sort(key=lambda x: x.last_modified, reverse=True)
             last_files = random.sample(files, min(3, len(files)))
             for file in last_files:
                 winners.append(
