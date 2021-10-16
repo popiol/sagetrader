@@ -76,7 +76,7 @@ def main(worker_id, model, master):
                     b"Operation was cancelled" not in line
                     and b"tensorflow/core/platform" not in line
                 ):
-                    err2 += line + "\n"
+                    err2 += line + b"\n"
             common.log(err2)
             common.log(out)
             try:
