@@ -74,7 +74,7 @@ def main(worker_id, model, master):
             for line in err.split(b"\n"):
                 if (
                     b"Operation was cancelled" not in line
-                    and b"tensorflow/core/platform" not in line
+                    and b"tensorflow/" not in line
                 ):
                     err2 += line + b"\n"
             common.log(err2)
