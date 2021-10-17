@@ -74,9 +74,11 @@ def main(worker_id, model, master):
                 if (
                     b"Operation was cancelled" not in line
                     and b"tensorflow/" not in line
+                    and b"rebuild TensorFlow" not in line
                 ):
                     err2 += line + b"\n"
-            common.log(err2)
+            if len(err2) > 0:
+                common.log(err2)
             common.log(out)
             try:
                 score = None

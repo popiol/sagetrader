@@ -105,6 +105,8 @@ class CustomAgent:
         )(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
         for layer_i, layer in enumerate(model.layers[2:-1]):
+            print(layer.input_shape, layer.output_shape, weights[layer_i])
+        for layer_i, layer in enumerate(model.layers[2:-1]):
             layer.set_weights(weights[layer_i])
         seed = random.gauss(0, 0.5)
         lr = old_model.optimizer.lr.numpy() * (1 + seed if seed > 0 else 1 / (1 - seed))
