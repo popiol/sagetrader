@@ -74,9 +74,6 @@ class CustomAgent:
         return model
 
     def randomly_change_model(self, old_model):
-        for _ in range(random.randrange(10)+1):
-            random.randrange(10)
-            random.gauss(0, 0.5)
         inputs = keras.layers.Input(shape=old_model.layers[0].output_shape[0][1:])
         l = inputs
         shape = old_model.layers[1].output_shape[1]
@@ -108,8 +105,7 @@ class CustomAgent:
         for layer_i, layer in enumerate(model.layers[2:-1]):
             if weights[layer_i] is not None:
                 layer.set_weights(weights[layer_i])
-        for _ in range(10):
-            seed = random.gauss(0, 0.5)
+        seed = random.gauss(0, 0.5)
         lr = old_model.optimizer.lr.numpy() * (1 + seed if seed > 0 else 1 / (1 - seed))
         model.compile(
             optimizer=keras.optimizers.Nadam(learning_rate=lr),
@@ -117,6 +113,7 @@ class CustomAgent:
         )
         for layer in model.layers:
             common.log(layer.__class__.__name__, layer.output_shape)
+        common.log("Old learning rate:", old_model.optimizer.lr.numpy())
         common.log("Learning rate:", lr)
         return model
 
