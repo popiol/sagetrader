@@ -105,7 +105,7 @@ class CustomAgent:
         )(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
         for layer_i, layer in enumerate(model.layers[2:-1]):
-            common.log(layer.input_shape, layer.output_shape, weights[layer_i])
+            common.log(layer.input_shape, layer.output_shape, np.shape(weights[layer_i][0]), np.shape(weights[layer_i][1]))
         for layer_i, layer in enumerate(model.layers[2:-1]):
             layer.set_weights(weights[layer_i])
         seed = random.gauss(0, 0.5)
