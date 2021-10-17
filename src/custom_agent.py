@@ -76,7 +76,8 @@ class CustomAgent:
     def randomly_change_model(self, old_model):
         inputs = keras.layers.Input(shape=old_model.layers[0].output_shape[0][1:])
         l = inputs
-        shape = old_model.layers[1].output_shape[1]
+        old_shape = old_model.layers[1].output_shape[1]
+        shape = max(10, old_shape + round(random.gauss(0, old_shape / 8)))
         l = keras.layers.LSTM(shape)(l)
         prev_shape = shape
         weights = []
