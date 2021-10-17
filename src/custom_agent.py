@@ -108,7 +108,8 @@ class CustomAgent:
         for layer_i, layer in enumerate(model.layers[2:-1]):
             if weights[layer_i] is not None:
                 layer.set_weights(weights[layer_i])
-        seed = random.gauss(0, 0.5)
+        for _ in range(10):
+            seed = random.gauss(0, 0.5)
         lr = old_model.optimizer.lr.numpy() * (1 + seed if seed > 0 else 1 / (1 - seed))
         model.compile(
             optimizer=keras.optimizers.Nadam(learning_rate=lr),
