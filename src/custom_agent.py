@@ -96,18 +96,18 @@ class CustomAgent:
                 new_w2 = np.zeros(shape)
                 new_w2[:len(w)] = w
                 weights.append([new_w1, new_w2])
-                prev_shape = shape
             if not random.randrange(10):
                 shape = random.randint(10, 100)
                 l = keras.layers.Dense(shape, activation="relu")(l)
+                weights.append(None)
+            prev_shape = shape
         outputs = keras.layers.Dense(
             old_model.layers[-1].output_shape[1], activation="sigmoid"
         )(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
         for layer_i, layer in enumerate(model.layers[2:-1]):
-            common.log(layer.input_shape, layer.output_shape, np.shape(weights[layer_i][0]), np.shape(weights[layer_i][1]))
-        for layer_i, layer in enumerate(model.layers[2:-1]):
-            layer.set_weights(weights[layer_i])
+            if weights[layer_i] is not None:
+                layer.set_weights(weights[layer_i])
         seed = random.gauss(0, 0.5)
         lr = old_model.optimizer.lr.numpy() * (1 + seed if seed > 0 else 1 / (1 - seed))
         model.compile(
