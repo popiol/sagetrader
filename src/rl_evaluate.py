@@ -105,7 +105,7 @@ def main(worker_id, model, master):
         os.makedirs(archive_dir, exist_ok=True)
         for file in glob.iglob(best_models_dir + "/agent*.dat"):
             if (file in winners and file not in bad_losers) or (
-                best_agent is not None and best_agent == file
+                best_agent is not None and best_score > 0 and best_agent == file
             ):
                 model_id = common.model_id_from_filename(best_agent)
                 for file in glob.iglob(f"{best_models_dir}/*{model_id}*"):
