@@ -45,6 +45,8 @@ class CustomAgent:
         l = keras.layers.LSTM(10)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
         outputs = keras.layers.Dense(1, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
@@ -58,6 +60,8 @@ class CustomAgent:
         l = inputs
         l = keras.layers.LSTM(10)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         outputs = keras.layers.Dense(3, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
