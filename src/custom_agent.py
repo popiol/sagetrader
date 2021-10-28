@@ -42,8 +42,11 @@ class CustomAgent:
     def create_hist_model(self):
         inputs = keras.layers.Input(shape=(self.max_quotes, 5))
         l = inputs
-        l = keras.layers.LSTM(100)(l)
+        l = keras.layers.LSTM(self.max_quotes)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
+        l = keras.layers.Dense(50, activation="relu")(l)
+        l = keras.layers.Dense(20, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
         outputs = keras.layers.Dense(1, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
@@ -55,8 +58,11 @@ class CustomAgent:
     def create_rt_model(self):
         inputs = keras.layers.Input(shape=(self.max_quotes, 6))
         l = inputs
-        l = keras.layers.LSTM(100)(l)
+        l = keras.layers.LSTM(self.max_quotes)(l)
         l = keras.layers.Dense(100, activation="relu")(l)
+        l = keras.layers.Dense(50, activation="relu")(l)
+        l = keras.layers.Dense(20, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
         outputs = keras.layers.Dense(3, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
