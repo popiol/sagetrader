@@ -53,7 +53,7 @@ def main(rebuild, worker_id, n_workers):
                 if max_timestamp is None or timestamp > max_timestamp:
                     max_timestamp = timestamp
                     last_winner = file
-            if max_timestamp is not None and random.randrange(2):
+            if max_timestamp is not None:
                 tmp_agent = CustomAgent(
                     env=StocksRTSimulator, env_config=env_config
                 )
