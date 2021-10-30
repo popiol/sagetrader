@@ -275,7 +275,7 @@ class StocksSimulator(gym.Env):
                             common.log(row)
                     if company in self.bars:
                         common.log("bars:", self.bars[company])
-        self.total_reward += reward
+        self.total_reward += reward + self.n_sold / 10
         return (
             self.state,
             reward,
