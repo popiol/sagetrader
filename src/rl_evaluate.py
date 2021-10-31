@@ -94,17 +94,14 @@ def main(worker_id, model, master):
         common.log("Scores:", scores)
         best_agent = None
         best_score = None
-        bad_losers = []
         for worker_i, score in enumerate(scores):
             if score is not None and (best_score is None or score > best_score):
                 best_score = score
                 best_agent = agent_files[worker_i]
-            if score is not None and score < -2000000:
-                bad_losers.append(agent_files[worker_i])
         os.makedirs(winners_dir, exist_ok=True)
         os.makedirs(archive_dir, exist_ok=True)
         for file in glob.iglob(best_models_dir + "/agent*.dat"):
-            if (file in winners and file not in bad_losers) or (
+            if (file in winners) or (
                 best_agent is not None and best_score > 0 and best_agent == file
             ):
                 model_id = common.model_id_from_filename(best_agent)
@@ -114,11 +111,6 @@ def main(worker_id, model, master):
                     shutil.move(file, file2)
                     common.s3_upload_file(file2)
                     common.s3_delete_file(file)
-        for bad_loser in bad_losers:
-            model_id = common.model_id_from_filename(bad_loser)
-            for file in glob.iglob(f"{best_models_dir}/*{model_id}*"):
-                file2 = file.replace(best_models_dir + "/", winners_dir + "/")
-                common.s3_delete_file(file2)
         files = glob.glob(best_models_dir + "/*.dat")
         files.extend(glob.glob(best_models_dir + "/*.h5"))
         for file in files:
