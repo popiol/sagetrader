@@ -71,28 +71,50 @@ class CustomAgent:
         )
         return model
 
+    def copy_weights(self, shape, old_w):
+        w = old_w[[slice(0, s) for s in shape]]
+        new_w1 = np.pad(w, [(0, s1 - s2) for s1, s2 in zip(shape, np.shape(w))])
+        return new_w1
+
     def randomly_change_model(self, old_model):
-        inputs = keras.layers.Input(shape=old_model.layers[0].output_shape[0][1:])
+        subject = random.choice(["lstm", "n_layers", "dense", "lr"])
+        shape = old_model.layers[0].output_shape[0][1:]
+        inputs = keras.layers.Input(shape=shape)
+        prev_shape = shape[1]
         l = inputs
-        old_shape = old_model.layers[1].output_shape[1]
-        shape = max(3, old_shape + round(random.gauss(0, old_shape / 5)))
+        layer = old_model.layers[1]
+        old_shape = layer.output_shape[1]
+        if subject == "lstm":
+            shape = max(3, old_shape + round(random.gauss(0, old_shape / 5)))
+        else:
+            shape = old_shape
         l = keras.layers.LSTM(shape)(l)
-        prev_shape = shape
         weights = []
+        old_ws = layer.get_weights()
+        new_ws = []
+        shape3 = shape * 4
+        for old_w, new_shape in zip(
+            old_ws, [(prev_shape, shape3), (shape, shape3), (shape3,)]
+        ):
+            new_w = self.copy_weights(new_shape, old_w)
+            new_ws.append(new_w)
+        weights.append(new_ws)
+        prev_shape = shape
         for layer in old_model.layers[2:-1]:
-            if random.randrange(10):
+            if subject != "n_layers" or random.randrange(10):
                 old_shape = layer.output_shape[1]
-                shape = max(10, old_shape + round(random.gauss(0, old_shape / 8)))
+                if subject == "dense":
+                    shape = max(10, old_shape + round(random.gauss(0, old_shape / 8)))
+                else:
+                    shape = old_shape
                 l = keras.layers.Dense(shape, activation="relu")(l)
-                old_w = layer.get_weights()
-                w = old_w[0][:prev_shape, :shape]
-                new_w1 = np.zeros((prev_shape, shape))
-                new_w1[:len(w), :len(w[0])] = w
-                w = old_w[1][:shape]
-                new_w2 = np.zeros(shape)
-                new_w2[:len(w)] = w
-                weights.append([new_w1, new_w2])
-            if not random.randrange(10):
+                old_ws = layer.get_weights()
+                new_ws = []
+                for old_w, new_shape in zip(old_ws, [(prev_shape, shape), (shape,)]):
+                    new_w = self.copy_weights(new_shape, old_w)
+                    new_ws.append(new_w)
+                weights.append(new_ws)
+            if subject == "n_layers" and not random.randrange(10):
                 shape = random.randint(10, 100)
                 l = keras.layers.Dense(shape, activation="relu")(l)
                 weights.append(None)
@@ -101,11 +123,16 @@ class CustomAgent:
             old_model.layers[-1].output_shape[1], activation="sigmoid"
         )(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
-        for layer_i, layer in enumerate(model.layers[2:-1]):
+        for layer_i, layer in enumerate(model.layers[1:-1]):
             if weights[layer_i] is not None:
                 layer.set_weights(weights[layer_i])
-        seed = random.gauss(0, 0.5)
-        lr = old_model.optimizer.lr.numpy() * (1 + seed if seed > 0 else 1 / (1 - seed))
+        if subject == "lr":
+            seed = random.gauss(0, 0.5)
+            lr = old_model.optimizer.lr.numpy() * (
+                1 + seed if seed > 0 else 1 / (1 - seed)
+            )
+        else:
+            lr = old_model.optimizer.lr.numpy()
         model.compile(
             optimizer=keras.optimizers.Nadam(learning_rate=lr),
             loss="mean_squared_logarithmic_error",
