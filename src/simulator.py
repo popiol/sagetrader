@@ -251,7 +251,7 @@ class StocksSimulator(gym.Env):
         if self.done:
             common.log("Finish simulation on:", self.dt.strftime(self.DT_FORMAT))
             common.log("capital:", self.capital, ", reward:", self.total_reward)
-        reward = (self.capital / self.cash_init - 1) * self.steps / 10000
+        reward = (self.capital / self.cash_init - 1) * self.steps / 10000 + self.n_sold / 10
         if self.capital > 20000:
             common.log("dt:", self.dt)
             common.log("capital:", self.capital)
@@ -275,7 +275,7 @@ class StocksSimulator(gym.Env):
                             common.log(row)
                     if company in self.bars:
                         common.log("bars:", self.bars[company])
-        self.total_reward += reward + self.n_sold / 10
+        self.total_reward += reward
         return (
             self.state,
             reward,
