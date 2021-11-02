@@ -78,6 +78,7 @@ class CustomAgent:
 
     def randomly_change_model(self, old_model):
         subject = random.choice(["lstm", "n_layers", "dense", "lr"])
+        common.log("randomize", subject)
         shape = old_model.layers[0].output_shape[0][1:]
         inputs = keras.layers.Input(shape=shape)
         prev_shape = shape[1]
@@ -104,7 +105,7 @@ class CustomAgent:
             if subject != "n_layers" or random.randrange(10):
                 old_shape = layer.output_shape[1]
                 if subject == "dense":
-                    shape = max(10, old_shape + round(random.gauss(0, old_shape / 8)))
+                    shape = max(10, old_shape + round(random.gauss(0, old_shape / 5)))
                 else:
                     shape = old_shape
                 l = keras.layers.Dense(shape, activation="relu")(l)
