@@ -72,7 +72,7 @@ class CustomAgent:
         return model
 
     def copy_weights(self, shape, old_w):
-        w = old_w[[slice(0, s) for s in shape]]
+        w = old_w[tuple([slice(0, s) for s in shape])]
         new_w1 = np.pad(w, [(0, s1 - s2) for s1, s2 in zip(shape, np.shape(w))])
         return new_w1
 
