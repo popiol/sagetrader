@@ -77,7 +77,7 @@ class CustomAgent:
         return new_w1
 
     def randomly_change_model(self, old_model):
-        subject = random.choices(["lstm", "n_layers", "dense", "lr"], [1, 1, 1, .5])
+        subject = random.choices(["lstm", "n_layers", "dense", "lr"], [1, 1, 1, .5])[0]
         common.log("randomize", subject)
         shape = old_model.layers[0].output_shape[0][1:]
         inputs = keras.layers.Input(shape=shape)
