@@ -102,7 +102,7 @@ class CustomAgent:
         weights.append(new_ws)
         prev_shape = shape
         for layer in old_model.layers[2:-1]:
-            if subject != "n_layers" or random.randrange(5):
+            if subject != "n_layers" or random.randrange(3):
                 old_shape = layer.output_shape[1]
                 if subject == "dense":
                     shape = max(10, old_shape + round(random.gauss(0, old_shape / 5)))
@@ -115,7 +115,7 @@ class CustomAgent:
                     new_w = self.copy_weights(new_shape, old_w)
                     new_ws.append(new_w)
                 weights.append(new_ws)
-            if subject == "n_layers" and not random.randrange(5):
+            if subject == "n_layers" and not random.randrange(3):
                 shape = random.randint(10, 100)
                 l = keras.layers.Dense(shape, activation="relu")(l)
                 weights.append(None)
