@@ -123,8 +123,10 @@ class CustomAgent:
         outputs = keras.layers.Dense(
             old_model.layers[-1].output_shape[1], activation="sigmoid"
         )(l)
+        old_ws = old_model.layers[-1].get_weights()
+        weights.append(old_ws)
         model = keras.Model(inputs=inputs, outputs=outputs)
-        for layer_i, layer in enumerate(model.layers[1:-1]):
+        for layer_i, layer in enumerate(model.layers[1:]):
             if weights[layer_i] is not None:
                 layer.set_weights(weights[layer_i])
         if subject == "lr":
