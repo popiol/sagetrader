@@ -78,7 +78,7 @@ class CustomAgent:
         return new_w1
 
     def randomly_change_model(self, old_model):
-        subject = random.choices(["lstm", "n_layers", "dense", "lr"], [1, 1, 1, .5])[0]
+        subject = random.choices(["lstm", "n_layers", "dense", "lr"], [1, 1, 1, 0.5])[0]
         common.log("randomize", subject)
         shape = old_model.layers[0].output_shape[0][1:]
         inputs = keras.layers.Input(shape=shape)
@@ -243,7 +243,7 @@ class CustomAgent:
             self.avg_reward = self.avg_reward * 0.99 + reward * 0.01
             if done:
                 break
-        total += math.log(self.env.n_bought + .0000001) * self.env.steps
+        total += math.log(self.env.n_bought + 0.0000001) * self.env.steps / 10
         self.std_total = (
             self.std_total * 0.9 + abs(total - self.avg_total) * 0.1
             if self.avg_total is not None
