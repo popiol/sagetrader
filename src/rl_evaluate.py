@@ -23,6 +23,7 @@ def main(worker_id, model, master):
     agent_file_worker = common.agent_file_worker
 
     if master:
+        os.makedirs(best_models_dir, exist_ok=True)
         winners = []
         files = glob.glob(winners_dir + "/*.dat")
         files.extend(glob.glob(winners_dir + "/*.h5"))

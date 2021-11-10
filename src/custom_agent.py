@@ -12,14 +12,15 @@ import math
 
 class CustomAgent:
     def __init__(
-        self, env: gym.Env, config: dict = {}, env_config: dict = {}, worker_id=None
+        self, env: gym.Env = None, config: dict = {}, env_config: dict = {}, worker_id: str = None
     ):
-        self.env = env(env_config)
-        self.train_max_steps = self.env.train_max_steps
-        self.validate_max_steps = self.env.validate_max_steps
-        self.max_quotes = self.env.max_quotes
-        self.hist_model = self.create_hist_model()
-        self.rt_model = self.create_rt_model()
+        if env is not None:
+            self.env = env(env_config)
+            self.train_max_steps = self.env.train_max_steps
+            self.validate_max_steps = self.env.validate_max_steps
+            self.max_quotes = self.env.max_quotes
+            self.hist_model = self.create_hist_model()
+            self.rt_model = self.create_rt_model()
         self.avg_reward = 0
         self.avg_total = None
         self.std_total = None
@@ -452,14 +453,15 @@ class CustomAgent:
             "std_profit": self.std_profit,
         }
 
-    def __setstate__(self, state: dict, worker_id=None):
+    def __setstate__(self, state: dict, worker_id=None, load_model=True):
         hist_model_file = f"{self.model_dir}/hist_model.h5"
         rt_model_file = f"{self.model_dir}/rt_model.h5"
         if worker_id is not None:
             hist_model_file = hist_model_file.replace(".h5", f"-{worker_id}.h5")
             rt_model_file = rt_model_file.replace(".h5", f"-{worker_id}.h5")
-        self.hist_model = keras.models.load_model(hist_model_file, compile=True)
-        self.rt_model = keras.models.load_model(rt_model_file, compile=True)
+        if load_model:
+            self.hist_model = keras.models.load_model(hist_model_file, compile=True)
+            self.rt_model = keras.models.load_model(rt_model_file, compile=True)
         self.best_score = state["best_score"]
         self.score_hist = state.get("score_hist", [])
         self.explore = state["explore"]
@@ -478,7 +480,7 @@ class CustomAgent:
         self.model_changed = True
         return checkpoint_path
 
-    def load_checkpoint(self, checkpoint_path: str):
+    def load_checkpoint(self, checkpoint_path: str, load_model=True):
         worker_id = None
         self.model_dir = "/".join(checkpoint_path.split("/")[:-1])
         if "-" in checkpoint_path:
@@ -486,4 +488,4 @@ class CustomAgent:
             self.worker_id = worker_id
         with open(checkpoint_path, "rb") as f:
             extra_data = pickle.load(f)
-        self.__setstate__(extra_data, worker_id)
+        self.__setstate__(extra_data, worker_id, load_model)

@@ -24,6 +24,8 @@ data_dir = "data"
 best_models_dir = "models"
 winners_dir = best_models_dir + "/winners"
 archive_dir = best_models_dir + "/archive"
+processing_dir = best_models_dir + "/processing"
+stable_dir = best_models_dir + "/stable"
 agent_file = data_dir + "/agent.dat"
 agent_file_worker = data_dir + "/agent-*.dat"
 hist_model_file = data_dir + "/hist_model.h5"
@@ -75,12 +77,16 @@ def log_error(*x):
     log(*x, level=logging.ERROR)
 
 
-class StreamToLogger:
+class StreamToLogger(io.IOBase):
     def __init__(self, level):
         self.level = level
 
     def write(self, x):
         log(x, level=self.level)
+
+    def flush(self):
+        logger.handlers[0].flush()
+
 
 
 sys.stderr = StreamToLogger(logging.ERROR)
