@@ -38,7 +38,7 @@ def main():
         max = np.max(agent.score_hist)
         n = len(agent.score_hist)
         common.log("n", n, "avg", avg, "std", std, "min", min, "max", max)
-        if n < 10:
+        if n < 5:
             common.log("Not enough data")
         elif avg < 2000000:
             common.log("Bad loser")
