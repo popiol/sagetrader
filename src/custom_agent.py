@@ -125,8 +125,14 @@ class CustomAgent:
         outputs = keras.layers.Dense(
             old_model.layers[-1].output_shape[1], activation="sigmoid"
         )(l)
+        old_shape = old_model.layers[-1].output_shape[1]
+        shape = old_shape
         old_ws = old_model.layers[-1].get_weights()
-        weights.append(old_ws)
+        new_ws = []
+        for old_w, new_shape in zip(old_ws, [(prev_shape, shape), (shape,)]):
+            new_w = self.copy_weights(new_shape, old_w)
+            new_ws.append(new_w)
+        weights.append(new_ws)
         model = keras.Model(inputs=inputs, outputs=outputs)
         for layer_i, layer in enumerate(model.layers[1:]):
             if weights[layer_i] is not None:
