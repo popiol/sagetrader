@@ -106,7 +106,7 @@ def main(worker_id, model, master):
             if (file in winners) or (
                 best_agent is not None and best_score > 0 and best_agent == file
             ):
-                model_id = common.model_id_from_filename(best_agent)
+                model_id = common.model_id_from_filename(file)
                 for file in glob.iglob(f"{best_models_dir}/*{model_id}*"):
                     file2 = file.replace(best_models_dir + "/", winners_dir + "/")
                     common.log(file, "->", file2)
