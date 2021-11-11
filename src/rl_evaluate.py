@@ -101,6 +101,7 @@ def main(worker_id, model, master):
                 best_agent = agent_files[worker_i]
         os.makedirs(winners_dir, exist_ok=True)
         os.makedirs(archive_dir, exist_ok=True)
+        common.log(winners)
         for file in glob.iglob(best_models_dir + "/agent*.dat"):
             if (file in winners) or (
                 best_agent is not None and best_score > 0 and best_agent == file
@@ -115,7 +116,7 @@ def main(worker_id, model, master):
         files = glob.glob(best_models_dir + "/*.dat")
         files.extend(glob.glob(best_models_dir + "/*.h5"))
         for file in files:
-            file2 = file.replace(best_models_dir + "/", best_models_dir + "/archive/")
+            file2 = file.replace(best_models_dir + "/", archive_dir + "/")
             common.log(file, "->", file2)
             shutil.move(file, file2)
             common.s3_upload_file(file2)

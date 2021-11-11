@@ -4,6 +4,7 @@ import glob
 from custom_agent import CustomAgent
 import numpy as np
 import shutil
+import math
 
 
 def main():
@@ -38,19 +39,22 @@ def main():
         max = np.max(agent.score_hist)
         n = len(agent.score_hist)
         common.log("n", n, "avg", avg, "std", std, "min", min, "max", max)
-        if n < 5:
-            common.log("Not enough data")
-        elif avg < 2000000:
+        if avg < -6000000 + 3000000 * math.log(n):
             common.log("Bad loser")
             bad_losers.append(model_id)
-        elif avg > 2000000:
+        elif avg > 200000 + 1000000 * math.log(n):
             common.log("Good winner")
             scores[model_id] = avg + min
         else:
             common.log("No action")
 
     if scores:
-        best_model = max(scores, key=scores.get)
+        best_score = None
+        for model_id in scores:
+            score = scores[model_id]
+            if best_score is None or score > best_score:
+                best_score = score
+                best_model = model_id
         common.log("Stable winner:", best_model)
         files = glob.glob(stable_dir + "/*")
         for file in files:
@@ -67,8 +71,11 @@ def main():
             f"{winners_dir}/rt_model-{model_id}.h5",
             f"{stable_dir}/rt_model-{model_id}.h5"
         )
+        for file in glob.iglob(stable_dir + "/*"):
+            common.s3_upload_file(file)
 
     for model_id in bad_losers:
+        common.log("delete", winners_dir + f"/agent-{model_id}.dat")
         common.s3_delete_file(winners_dir + f"/agent-{model_id}.dat")
         common.s3_delete_file(winners_dir + f"/hist_model-{model_id}.h5")
         common.s3_delete_file(winners_dir + f"/rt_model-{model_id}.h5")
