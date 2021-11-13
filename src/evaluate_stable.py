@@ -44,7 +44,8 @@ def main():
             bad_losers.append(model_id)
         elif avg > 200000 + 1000000 * math.log(n):
             common.log("Good winner")
-            scores[model_id] = avg + min
+            scores[model_id] = (avg + min) * math.log(n)
+            common.log("Score:", scores[model_id])
         else:
             common.log("No action")
 

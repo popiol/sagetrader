@@ -101,7 +101,6 @@ def main(worker_id, model, master):
                 best_agent = agent_files[worker_i]
         os.makedirs(winners_dir, exist_ok=True)
         os.makedirs(archive_dir, exist_ok=True)
-        common.log(winners)
         for file in glob.iglob(best_models_dir + "/agent*.dat"):
             if (file in winners) or (
                 best_agent is not None and best_score > 0 and best_agent == file
