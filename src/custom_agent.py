@@ -373,7 +373,7 @@ class CustomAgent:
                 )
             if hist_set["train_x"] and rt_set["train_x"]:
                 self.fitted = True
-            self.explore = self.explore * 0.9
+            self.explore = self.explore * 0.94
         if self.max_total is None or total >= self.max_total:
             self.max_total = total
         return total
