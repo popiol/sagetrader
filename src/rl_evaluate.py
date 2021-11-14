@@ -31,7 +31,7 @@ def main(worker_id, model, master):
             os.remove(file)
         files = common.s3_find_objects(winners_dir + "/agent")
         if files:
-            last_files = random.sample(files, min(4, len(files)))
+            last_files = random.sample(files, min(3, len(files)))
             for file in last_files:
                 winners.append(
                     file.key.replace(winners_dir + "/", best_models_dir + "/")
