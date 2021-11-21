@@ -251,7 +251,7 @@ class StocksSimulator(gym.Env):
         if self.done:
             common.log("Finish simulation on:", self.dt.strftime(self.DT_FORMAT))
             common.log("capital:", self.capital, ", reward:", self.total_reward)
-        reward = (self.capital / self.cash_init - 1) * self.steps / 10000
+        reward = (math.log(self.capital / self.cash_init + 1) / math.log(2) - 1) * self.steps / 10000
         if False and self.capital > 20000:
             common.log("dt:", self.dt)
             common.log("capital:", self.capital)
