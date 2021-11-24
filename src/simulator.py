@@ -285,7 +285,7 @@ class StocksSimulator(gym.Env):
 
 
 class StocksRTSimulator(StocksSimulator):
-    def __init__(self, config):
+    def __init__(self, config = {}):
         self.train_max_steps = config.get("train_max_steps", 60000)
         self.validate_max_steps = config.get("validate_max_steps", 100000)
         self.max_quotes = config.get("max_quotes", 8)

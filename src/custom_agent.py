@@ -48,7 +48,7 @@ class CustomAgent:
         l = keras.layers.Dense(100, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="softmax")(l)
         outputs = keras.layers.Dense(1, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
@@ -64,7 +64,7 @@ class CustomAgent:
         l = keras.layers.Dense(100, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="relu")(l)
+        l = keras.layers.Dense(10, activation="softmax")(l)
         outputs = keras.layers.Dense(3, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
@@ -88,7 +88,8 @@ class CustomAgent:
         layer = old_model.layers[1]
         old_shape = layer.output_shape[1]
         if subject == "lstm":
-            shape = max(3, old_shape + round(random.gauss(0, old_shape / 5)))
+            pow = lambda x, y: math.copysign(math.pow(x,y), x)
+            shape = max(3, old_shape + pow(round(random.uniform(-pow(old_shape / 2, .5), pow(old_shape / 2, .5))), 2))
         else:
             shape = old_shape
         l = keras.layers.LSTM(shape)(l)
