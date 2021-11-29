@@ -13,8 +13,8 @@ class Supervised:
 
 class TriangleSupervised(Supervised):
     def get_action(self, x, is_hist):
-        p = [a[0] for a in x]
-        confidence = max(0, (p[-4]) - (p[-1] + p[-2] + p[-3]))
-        buy_price = self.env.relative_price_encode(-.005)
-        sell_price = self.env.relative_price_encode(np.max(p))
+        p = [self.env.relative_price_decode(a[0]) for a in x]
+        confidence = self.env.relative_price_encode((p[-4]) - (p[-1] + p[-2] + p[-3]))
+        buy_price = self.env.relative_price_encode(0)
+        sell_price = self.env.relative_price_encode(0)
         return [confidence, buy_price, sell_price]

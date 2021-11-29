@@ -251,7 +251,11 @@ class StocksSimulator(gym.Env):
         if self.done:
             common.log("Finish simulation on:", self.dt.strftime(self.DT_FORMAT))
             common.log("capital:", self.capital, ", reward:", self.total_reward)
-        reward = (math.log(self.capital / self.cash_init + 1) / math.log(2) - 1) * self.steps / 10000
+        reward = (
+            (math.log(self.capital / self.cash_init + 1) / math.log(2) - 1)
+            * self.steps
+            / 10000
+        )
         if False and self.capital > 20000:
             common.log("dt:", self.dt)
             common.log("capital:", self.capital)
@@ -285,7 +289,7 @@ class StocksSimulator(gym.Env):
 
 
 class StocksRTSimulator(StocksSimulator):
-    def __init__(self, config = {}):
+    def __init__(self, config={}):
         self.train_max_steps = config.get("train_max_steps", 60000)
         self.validate_max_steps = config.get("validate_max_steps", 100000)
         self.max_quotes = config.get("max_quotes", 8)
@@ -533,7 +537,7 @@ class StocksRTSimulator(StocksSimulator):
                         var / state[price_i + 1][var_i] - 1
                     )
                 else:
-                    state[price_i][var_i] = 0
+                    state[price_i][var_i] = self.relative_price_encode(0)
         if len(state) > 1:
             state = state[:-1]
         else:
