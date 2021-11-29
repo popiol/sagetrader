@@ -1,46 +1,20 @@
-import tensorflow.keras as keras
-from simulator import StocksRTSimulator
+import numpy as np
+import common
 
 
-class Supervised():
-    def __init__(self):
-        self.hist_model = self.create_hist_model()
-        self.rt_model = self.create_rt_model()
-        self.price_ch_buckets = [-.27, -.09, -.03, -.01, .01, .03, .09, .27]
-        self.hist_trainset = self.get_trainsets()
+class Supervised:
+    def __init__(self, env):
+        self.env = env
+        self.action_space = env.action_space
 
-    def create_hist_model(self):
-        inputs = keras.layers.Input(shape=(self.max_quotes, 5))
-        l = inputs
-        l = keras.layers.LSTM(self.max_quotes)(l)
-        l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="relu")(l)
-        outputs = keras.layers.Dense(9, activation="softmax")(l)
-        model = keras.Model(inputs=inputs, outputs=outputs)
-        model.compile(
-            optimizer=keras.optimizers.Nadam(learning_rate=0.001),
-            loss="categorical_crossentropy",
-        )
-        return model
+    def get_action(self, x, is_hist):
+        return self.action_space.sample()
 
-    def create_rt_model(self):
-        inputs = keras.layers.Input(shape=(self.max_quotes, 6))
-        l = inputs
-        l = keras.layers.LSTM(self.max_quotes)(l)
-        l = keras.layers.Dense(100, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="relu")(l)
-        outputs = keras.layers.Dense(9, activation="softmax")(l)
-        model = keras.Model(inputs=inputs, outputs=outputs)
-        model.compile(
-            optimizer=keras.optimizers.Nadam(learning_rate=0.001),
-            loss="categorical_crossentropy",
-        )
-        return model
 
-    def get_trainsets(self):
-        simulator = StocksRTSimulator()
-
+class TriangleSupervised(Supervised):
+    def get_action(self, x, is_hist):
+        p = [a[0] for a in x]
+        confidence = max(0, (p[-4]) - (p[-1] + p[-2] + p[-3]))
+        buy_price = self.env.relative_price_encode(-.005)
+        sell_price = self.env.relative_price_encode(np.max(p))
+        return [confidence, buy_price, sell_price]

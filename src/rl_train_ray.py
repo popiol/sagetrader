@@ -3,18 +3,20 @@ import os
 if os.getcwd().endswith("/src"):
     os.chdir("..")
 
-from custom_agent import CustomAgent
-import time
-import numpy as np
-from simulator import StocksRTSimulator
-import common
-import shutil
-import sys
-import glob
-import subprocess
 import datetime
+import glob
 import pickle
-import random
+import shutil
+import subprocess
+import sys
+import time
+
+import numpy as np
+
+import common
+from custom_agent import CustomAgent
+from simulator import StocksRTSimulator
+from supervised import TriangleSupervised
 
 
 def main(rebuild, worker_id, n_workers):
@@ -34,11 +36,14 @@ def main(rebuild, worker_id, n_workers):
     rt_model_file_best = common.rt_model_file_best
 
     n_workers = n_workers or 1
-    
+
     env_config = {}
 
     agent = CustomAgent(
-        env=StocksRTSimulator, env_config=env_config, worker_id=worker_id
+        env=StocksRTSimulator,
+        supervised=TriangleSupervised,
+        env_config=env_config,
+        worker_id=worker_id,
     )
     if os.path.isfile(agent_file):
         agent.load_checkpoint(agent_file)
@@ -55,7 +60,9 @@ def main(rebuild, worker_id, n_workers):
                     last_winner = file
             if max_timestamp is not None:
                 tmp_agent = CustomAgent(
-                    env=StocksRTSimulator, env_config=env_config
+                    env=StocksRTSimulator,
+                    supervised=TriangleSupervised,
+                    env_config=env_config,
                 )
                 tmp_agent.load_checkpoint(last_winner)
                 agent.hist_model = agent.randomly_change_model(tmp_agent.hist_model)
@@ -76,22 +83,21 @@ def main(rebuild, worker_id, n_workers):
             agent_data = pickle.load(f)
         if agent_data["best_score"] > 0:
             dt = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-            agent_file_best2 = agent_file_best.replace(data_dir + "/", best_models_dir + "/").replace("best", "best-" + dt)
-            shutil.copyfile(
-                agent_file_best, agent_file_best2
-            )
-            hist_model_file_best2 = hist_model_file_best.replace(data_dir + "/", best_models_dir + "/").replace("best", "best-" + dt)
-            shutil.copyfile(
-                hist_model_file_best, hist_model_file_best2
-            )
-            rt_model_file_best2 = rt_model_file_best.replace(data_dir + "/", best_models_dir + "/").replace("best", "best-" + dt)
-            shutil.copyfile(
-                rt_model_file_best, rt_model_file_best2
-            )
+            agent_file_best2 = agent_file_best.replace(
+                data_dir + "/", best_models_dir + "/"
+            ).replace("best", "best-" + dt)
+            shutil.copyfile(agent_file_best, agent_file_best2)
+            hist_model_file_best2 = hist_model_file_best.replace(
+                data_dir + "/", best_models_dir + "/"
+            ).replace("best", "best-" + dt)
+            shutil.copyfile(hist_model_file_best, hist_model_file_best2)
+            rt_model_file_best2 = rt_model_file_best.replace(
+                data_dir + "/", best_models_dir + "/"
+            ).replace("best", "best-" + dt)
+            shutil.copyfile(rt_model_file_best, rt_model_file_best2)
             common.s3_upload_file(agent_file_best2)
             common.s3_upload_file(hist_model_file_best2)
             common.s3_upload_file(rt_model_file_best2)
-        
 
     timestamp1 = time.time()
 
@@ -108,12 +114,7 @@ def main(rebuild, worker_id, n_workers):
 
     workers = []
     for worker_id in range(n_workers):
-        cmd = [
-            "/usr/bin/python3",
-            "src/rl_train_ray.py",
-            "--worker",
-            str(worker_id)
-        ]
+        cmd = ["/usr/bin/python3", "src/rl_train_ray.py", "--worker", str(worker_id)]
         if rebuild:
             cmd.append("--rebuild")
         worker = subprocess.Popen(
@@ -151,12 +152,8 @@ def main(rebuild, worker_id, n_workers):
         shutil.copyfile(
             hist_model_file_worker.replace("*", best_worker), hist_model_file
         )
-        common.log(
-            rt_model_file_worker.replace("*", best_worker), "->", rt_model_file
-        )
-        shutil.copyfile(
-            rt_model_file_worker.replace("*", best_worker), rt_model_file
-        )
+        common.log(rt_model_file_worker.replace("*", best_worker), "->", rt_model_file)
+        shutil.copyfile(rt_model_file_worker.replace("*", best_worker), rt_model_file)
         shutil.copyfile(agent_file_worker.replace("*", best_worker), agent_file)
 
     timestamp2 = time.time()
@@ -177,7 +174,7 @@ if __name__ == "__main__":
             add_to = ["worker"]
         elif arg == "--n_workers":
             add_to = ["n_workers"]
-        
+
     worker_id = params.get("worker")
     n_workers = int(params["n_workers"]) if "n_workers" in params else None
 

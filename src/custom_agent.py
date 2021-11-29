@@ -1,18 +1,26 @@
 import datetime
-import gym
+import glob
+import math
+import pickle
 import random
+import shutil
+from typing import Type
+
+import gym
 import numpy as np
 import tensorflow.keras as keras
-import pickle
+
 import common
-import glob
-import shutil
-import math
+from supervised import Supervised
 
 
 class CustomAgent:
     def __init__(
-        self, env: gym.Env = None, config: dict = {}, env_config: dict = {}, worker_id: str = None
+        self,
+        env: gym.Env = None,
+        supervised = Supervised,
+        env_config: dict = {},
+        worker_id: str = None,
     ):
         if env is not None:
             self.env = env(env_config)
@@ -21,6 +29,7 @@ class CustomAgent:
             self.max_quotes = self.env.max_quotes
             self.hist_model = self.create_hist_model()
             self.rt_model = self.create_rt_model()
+            self.supervised = supervised(self.env)
         self.avg_reward = 0
         self.avg_total = None
         self.std_total = None
@@ -88,8 +97,19 @@ class CustomAgent:
         layer = old_model.layers[1]
         old_shape = layer.output_shape[1]
         if subject == "lstm":
-            pow = lambda x, y: math.copysign(math.pow(x,y), x)
-            shape = max(3, old_shape + pow(round(random.uniform(-pow(old_shape / 2, .5), pow(old_shape / 2, .5))), 2))
+            pow = lambda x, y: math.copysign(math.pow(x, y), x)
+            shape = max(
+                3,
+                old_shape
+                + pow(
+                    round(
+                        random.uniform(
+                            -pow(old_shape / 2, 0.5), pow(old_shape / 2, 0.5)
+                        )
+                    ),
+                    2,
+                ),
+            )
         else:
             shape = old_shape
         l = keras.layers.LSTM(shape)(l)
@@ -234,7 +254,7 @@ class CustomAgent:
             if self.fitted:
                 action = self.predict_action(x)
             else:
-                action = self.env.action_space.sample()
+                action = self.supervised.get_action(x, trainset is hist_set)
             if train and random.random() < explore:
                 for val_i, val in enumerate(action):
                     action[val_i] = min(

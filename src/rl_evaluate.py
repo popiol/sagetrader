@@ -4,14 +4,15 @@ import sys
 if os.getcwd().endswith("/src"):
     os.chdir("..")
 
-from custom_agent import CustomAgent
-import time
-from simulator import StocksRTSimulator
-import common
-import subprocess
 import glob
-import shutil
 import random
+import shutil
+import subprocess
+import time
+
+import common
+from custom_agent import CustomAgent
+from simulator import StocksRTSimulator
 
 
 def main(worker_id, model, master):
