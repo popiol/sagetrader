@@ -256,6 +256,7 @@ class CustomAgent:
             else:
                 action = self.supervised.get_action(x, trainset is hist_set)
             if train and random.random() < explore:
+                action = self.supervised.get_action(x, trainset is hist_set)
                 for val_i, val in enumerate(action):
                     action[val_i] = min(
                         1, max(0, val + seed + random.gauss(0, explore * 0.1))
