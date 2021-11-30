@@ -97,9 +97,18 @@ def main(worker_id, model, master):
         best_agent = None
         best_score = None
         for worker_i, score in enumerate(scores):
+            agent = CustomAgent()
+            agent.load_checkpoint(agent_files[worker_i])
+            agent.wins.append(0)
+            agent.save_checkpoint()
             if score is not None and (best_score is None or score > best_score):
                 best_score = score
                 best_agent = agent_files[worker_i]
+        if best_agent is not None:
+            agent = CustomAgent()
+            agent.load_checkpoint(best_agent)
+            agent.wins[-1] = 1
+            agent.save_checkpoint()
         os.makedirs(winners_dir, exist_ok=True)
         os.makedirs(archive_dir, exist_ok=True)
         for file in glob.iglob(best_models_dir + "/agent*.dat"):

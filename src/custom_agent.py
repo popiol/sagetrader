@@ -18,7 +18,7 @@ class CustomAgent:
     def __init__(
         self,
         env: gym.Env = None,
-        supervised = Supervised,
+        supervised=Supervised,
         env_config: dict = {},
         worker_id: str = None,
     ):
@@ -49,6 +49,7 @@ class CustomAgent:
         )
         self.confidences = {}
         self.niter = 0
+        self.wins = []
 
     def create_hist_model(self):
         inputs = keras.layers.Input(shape=(self.max_quotes, 5))
@@ -479,6 +480,7 @@ class CustomAgent:
             "std_total": self.std_total,
             "avg_profit": self.avg_profit,
             "std_profit": self.std_profit,
+            "wins": self.wins,
         }
 
     def __setstate__(self, state: dict, worker_id=None, load_model=True):
@@ -498,6 +500,7 @@ class CustomAgent:
         self.std_total = state.get("std_total")
         self.avg_profit = state.get("avg_profit")
         self.std_profit = state.get("std_profit")
+        self.wins = state.get("wins", [])
 
     def save_checkpoint(self, checkpoint_dir: str = None) -> str:
         if checkpoint_dir is None:
