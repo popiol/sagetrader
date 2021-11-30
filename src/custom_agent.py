@@ -57,7 +57,7 @@ class CustomAgent:
         l = keras.layers.Dense(100, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="softmax")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
         outputs = keras.layers.Dense(1, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
@@ -73,7 +73,7 @@ class CustomAgent:
         l = keras.layers.Dense(100, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
         l = keras.layers.Dense(10, activation="relu")(l)
-        l = keras.layers.Dense(10, activation="softmax")(l)
+        l = keras.layers.Dense(10, activation="relu")(l)
         outputs = keras.layers.Dense(3, activation="sigmoid")(l)
         model = keras.Model(inputs=inputs, outputs=outputs)
         model.compile(
