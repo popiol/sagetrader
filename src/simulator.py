@@ -184,6 +184,7 @@ class StocksSimulator(gym.Env):
         return self.cash - self.get_blocked_cash()
 
     def step(self, action):
+        prev_capital = self.get_capital()
         self.steps += 1
         if self.steps > self.max_steps:
             self.done = True
@@ -251,11 +252,8 @@ class StocksSimulator(gym.Env):
         if self.done:
             common.log("Finish simulation on:", self.dt.strftime(self.DT_FORMAT))
             common.log("capital:", self.capital, ", reward:", self.total_reward)
-        reward = (
-            (math.log(self.capital / self.cash_init + 1) / math.log(2) - 1)
-            * self.steps
-            / 10000
-        )
+        ch = self.capital / prev_capital - 1
+        reward = math.copysign(1, ch) * math.sqrt(abs(ch)) * 10000
         if False and self.capital > 20000:
             common.log("dt:", self.dt)
             common.log("capital:", self.capital)
