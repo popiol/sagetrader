@@ -144,7 +144,7 @@ class StocksSimulator(gym.Env):
                 val = order["n_shares"] * order["limit"]
                 self.cash -= val * (1 if order["buy"] else -1) + self.provision * val
                 if self.log_transactions:
-                    common.log("capital", self.get_capital())
+                    common.log("capital:", self.get_capital(), ", reward:", self.total_reward)
             else:
                 orders[company] = order
         self.orders = orders
