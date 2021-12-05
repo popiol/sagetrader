@@ -1,5 +1,4 @@
-import numpy as np
-import common
+import math
 
 
 class Supervised:
@@ -14,7 +13,12 @@ class Supervised:
 class TriangleSupervised(Supervised):
     def get_action(self, x, is_hist):
         p = [self.env.relative_price_decode(a[0]) for a in x]
-        confidence = self.env.relative_price_encode((p[-4]) - (p[-1] + p[-2] + p[-3]))
+        confidence = 0
+        confidence += math.exp(-abs(p[-1] - .01) / .01)
+        confidence += math.exp(-abs(p[-2] + .06) / .06)
+        confidence += math.exp(-abs(p[-3] - .05) / .05)
+        confidence += math.exp(-abs(p[-6] - .3) / .3)
+        confidence = min(1, max(0, confidence / 4))
         buy_price = self.env.relative_price_encode(0)
         sell_price = self.env.relative_price_encode(0)
         return [confidence, buy_price, sell_price]
