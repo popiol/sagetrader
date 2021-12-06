@@ -47,7 +47,7 @@ def main(rebuild, worker_id, n_workers):
     )
     if os.path.isfile(agent_file):
         agent.load_checkpoint(agent_file)
-    if agent.explore < 0.1:
+    if agent.explore < 0.5:
         rebuild = True
 
     if worker_id is not None:
