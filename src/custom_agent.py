@@ -273,7 +273,7 @@ class CustomAgent:
             self.avg_reward = self.avg_reward * 0.99 + reward * 0.01
             if done:
                 break
-        total += math.log(self.env.n_bought + 0.0000001) * self.env.steps
+        total += math.log(self.env.n_bought + 0.0000001) * self.env.steps * .1
         self.std_total = (
             self.std_total * 0.9 + abs(total - self.avg_total) * 0.1
             if self.avg_total is not None
