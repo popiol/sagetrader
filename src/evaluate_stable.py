@@ -39,10 +39,10 @@ def main():
         max = np.max(agent.score_hist)
         n = len(agent.score_hist)
         common.log("n", n, "avg", avg, "std", std, "min", min, "max", max)
-        if avg < -6000000 + 3000000 * math.log(n):
+        if avg < -6000000 + 3000000 * min(math.log(n), 2):
             common.log("Bad loser")
             bad_losers.append(model_id)
-        elif avg > 200000 + 1000000 * math.log(n):
+        elif avg > 200000 + 1000000 * min(math.log(n), 2):
             common.log("Good winner")
             scores[model_id] = (avg + min) * math.log(n)
             common.log("Score:", scores[model_id])
