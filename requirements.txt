@@ -7,3 +7,4 @@ ray[rllib]
 pytest
 websockets
 pyyaml
+psutil

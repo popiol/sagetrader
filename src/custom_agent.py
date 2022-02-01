@@ -42,11 +42,7 @@ class CustomAgent:
         self.score_hist = []
         self.model_dir = "data"
         self.model_changed = False
-        self.worker_id = (
-            worker_id
-            if worker_id is not None
-            else datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        )
+        self.worker_id = worker_id if worker_id is not None else datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         self.confidences = {}
         self.niter = 0
         self.wins = []
@@ -103,11 +99,7 @@ class CustomAgent:
                 3,
                 old_shape
                 + pow(
-                    round(
-                        random.uniform(
-                            -pow(old_shape / 2, 0.5), pow(old_shape / 2, 0.5)
-                        )
-                    ),
+                    round(random.uniform(-pow(old_shape / 2, 0.5), pow(old_shape / 2, 0.5))),
                     2,
                 ),
             )
@@ -118,9 +110,7 @@ class CustomAgent:
         old_ws = layer.get_weights()
         new_ws = []
         shape3 = shape * 4
-        for old_w, new_shape in zip(
-            old_ws, [(prev_shape, shape3), (shape, shape3), (shape3,)]
-        ):
+        for old_w, new_shape in zip(old_ws, [(prev_shape, shape3), (shape, shape3), (shape3,)]):
             new_w = self.copy_weights(new_shape, old_w)
             new_ws.append(new_w)
         weights.append(new_ws)
@@ -144,9 +134,7 @@ class CustomAgent:
                 l = keras.layers.Dense(shape, activation="relu")(l)
                 weights.append(None)
             prev_shape = shape
-        outputs = keras.layers.Dense(
-            old_model.layers[-1].output_shape[1], activation="sigmoid"
-        )(l)
+        outputs = keras.layers.Dense(old_model.layers[-1].output_shape[1], activation="sigmoid")(l)
         old_shape = old_model.layers[-1].output_shape[1]
         shape = old_shape
         old_ws = old_model.layers[-1].get_weights()
@@ -161,9 +149,7 @@ class CustomAgent:
                 layer.set_weights(weights[layer_i])
         if subject == "lr":
             seed = random.gauss(0, 0.5)
-            lr = old_model.optimizer.lr.numpy() * (
-                1 + seed if seed > 0 else 1 / (1 - seed)
-            )
+            lr = old_model.optimizer.lr.numpy() * (1 + seed if seed > 0 else 1 / (1 - seed))
         else:
             lr = old_model.optimizer.lr.numpy()
         model.compile(
@@ -178,19 +164,13 @@ class CustomAgent:
 
     def predict_action(self, x):
         if self.env.last_event_type == self.env.HIST_EVENT:
-            confidence = self.hist_model.predict_on_batch(
-                np.array([x]).astype(np.float32)
-            )[0][0]
+            confidence = self.hist_model.predict_on_batch(np.array([x]).astype(np.float32))[0][0]
             action = [confidence, 0.5, 0.5]
             self.confidences[self.env.company] = confidence
             # common.log("hist pred:", confidence)
         else:
-            confidence, buy_price, sell_price = self.rt_model.predict_on_batch(
-                np.array([x]).astype(np.float32)
-            )[0]
-            confidence = (
-                confidence + self.confidences.get(self.env.company, confidence)
-            ) / 2
+            confidence, buy_price, sell_price = self.rt_model.predict_on_batch(np.array([x]).astype(np.float32))[0]
+            confidence = (confidence + self.confidences.get(self.env.company, confidence)) / 2
             action = [confidence, buy_price, sell_price]
             # common.log("rt pred:", confidence, buy_price, sell_price)
         return action
@@ -216,11 +196,7 @@ class CustomAgent:
             return action
 
     def run_episode(self, train=True, live=False):
-        stage = (
-            self.env.TRAINING
-            if train
-            else (self.env.VALIDATION if not live else self.env.PREDICTION)
-        )
+        stage = self.env.TRAINING if train else (self.env.VALIDATION if not live else self.env.PREDICTION)
         self.env.stage = stage
         state = self.env.reset()
         hist_set = {
@@ -259,9 +235,7 @@ class CustomAgent:
             if train and random.random() < explore:
                 action = self.supervised.get_action(x, trainset is hist_set)
                 for val_i, val in enumerate(action):
-                    action[val_i] = min(
-                        1, max(0, val + seed + random.gauss(0, explore * 0.1))
-                    )
+                    action[val_i] = min(1, max(0, val + seed + random.gauss(0, explore * 0.1)))
             if train:
                 y = self.transform_y(action)
                 trainset["all_x"].append(x)
@@ -276,16 +250,15 @@ class CustomAgent:
         total = 0
         for trans in self.env.transactions:
             if not trans["buy"] and "profit_percent" in trans:
-                total += trans["profit_percent"] * 1000000
-        total += math.log(self.env.n_bought + 0.0000001) * self.env.steps * .1
-        self.std_total = (
-            self.std_total * 0.9 + abs(total - self.avg_total) * 0.1
-            if self.avg_total is not None
-            else 0
-        )
-        self.avg_total = (
-            self.avg_total * 0.9 + total * 0.1 if self.avg_total is not None else total
-        )
+                total += min(0.1, trans["profit_percent"]) * 1000000
+        for comp in self.env.portfolio:
+            trans = self.env.portfolio[comp]
+            if "last_price" in trans:
+                profit = trans["last_price"] / trans["purchase_price"] - 1
+                total += min(0.1, profit) * 1000000
+        total += math.log(self.env.n_bought + 0.0000001) * self.env.steps * 0.1
+        self.std_total = self.std_total * 0.9 + abs(total - self.avg_total) * 0.1 if self.avg_total is not None else 0
+        self.avg_total = self.avg_total * 0.9 + total * 0.1 if self.avg_total is not None else total
         if train:
             common.log("Fit")
             nit = max(
@@ -301,8 +274,7 @@ class CustomAgent:
             for trans in self.env.transactions:
                 if not trans["buy"] and "profit_percent" in trans:
                     self.std_profit = (
-                        self.std_profit * 0.999
-                        + abs(trans["profit_percent"] - self.avg_profit) * 0.001
+                        self.std_profit * 0.999 + abs(trans["profit_percent"] - self.avg_profit) * 0.001
                         if self.std_profit is not None
                         else 0
                     )
@@ -311,9 +283,7 @@ class CustomAgent:
                         if self.avg_profit is not None
                         else trans["profit_percent"]
                     )
-                    if trans["profit_percent"] > max(
-                        0, self.avg_profit + 0.5 * self.std_profit
-                    ):
+                    if trans["profit_percent"] > max(0, self.avg_profit + 0.5 * self.std_profit):
                         good_bad_trans.append((trans, True))
                         n_good += 1
                     elif trans["profit_percent"] < 0:
@@ -338,38 +308,24 @@ class CustomAgent:
                         trainset["all_x"],
                         trainset["all_y"],
                     ):
-                        if (
-                            trainset is hist_set
-                            and company == trans["company"]
-                            and dt < buy_dt
-                        ):
+                        if trainset is hist_set and company == trans["company"] and dt < buy_dt:
                             hist_train_x = x
                             hist_train_y = int(good)
-                        elif (
-                            trainset is rt_set
-                            and company == trans["company"]
-                            and dt < buy_dt
-                        ):
+                        elif trainset is rt_set and company == trans["company"] and dt < buy_dt:
                             if good:
                                 y = [1, y[1], y[2]]
                             else:
                                 y = [0, 1 - y[1], 1 - y[2]]
                             buy_train_x = x
                             buy_train_y = y
-                        elif (
-                            trainset is rt_set
-                            and company == trans["company"]
-                            and dt < sell_dt
-                        ):
+                        elif trainset is rt_set and company == trans["company"] and dt < sell_dt:
                             if good:
                                 y = [1, y[1], y[2]]
                             else:
                                 y = [0, 1 - y[1], 1 - y[2]]
                             sell_train_x = x
                             sell_train_y = y
-                        elif (trainset is hist_set and dt >= buy_dt) or (
-                            trainset is rt_set and dt >= sell_dt
-                        ):
+                        elif (trainset is hist_set and dt >= buy_dt) or (trainset is rt_set and dt >= sell_dt):
                             break
                 c = random.uniform(0.8, 0.85)
                 w = int(good) * c + (1 - c)
@@ -450,16 +406,10 @@ class CustomAgent:
             if "agent-best" not in best_agent:
                 common.log(best_agent, "->", self.model_dir + "/agent-best.dat")
                 shutil.copyfile(best_agent, self.model_dir + "/agent-best.dat")
-                hist_model_file = best_agent.replace("agent", "hist_model").replace(
-                    ".dat", ".h5"
-                )
-                common.log(
-                    hist_model_file, "->", self.model_dir + "/hist_model-best.h5"
-                )
+                hist_model_file = best_agent.replace("agent", "hist_model").replace(".dat", ".h5")
+                common.log(hist_model_file, "->", self.model_dir + "/hist_model-best.h5")
                 shutil.copyfile(hist_model_file, self.model_dir + "/hist_model-best.h5")
-                rt_model_file = best_agent.replace("agent", "rt_model").replace(
-                    ".dat", ".h5"
-                )
+                rt_model_file = best_agent.replace("agent", "rt_model").replace(".dat", ".h5")
                 common.log(rt_model_file, "->", self.model_dir + "/rt_model-best.h5")
                 shutil.copyfile(rt_model_file, self.model_dir + "/rt_model-best.h5")
         return total
