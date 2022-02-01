@@ -276,7 +276,7 @@ class CustomAgent:
         total = 0
         for trans in self.env.transactions:
             if not trans["buy"] and "profit_percent" in trans:
-                total += trans["profit_percent"] * 100000000
+                total += trans["profit_percent"] * 1000000
         total += math.log(self.env.n_bought + 0.0000001) * self.env.steps * .1
         self.std_total = (
             self.std_total * 0.9 + abs(total - self.avg_total) * 0.1
