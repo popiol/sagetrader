@@ -247,7 +247,7 @@ def find_random_rt_quotes():
         debug.append(path)
         max_it -= 1
         if max_it < 0:
-            print("debug:", debug)
+            log("debug:", debug)
             raise Exception("Cannot find random RT file")
         files = glob.glob(path + "/*")
         last_file = max(files)
