@@ -13,7 +13,10 @@ import sys
 import boto3
 import psutil
 import sagemaker
+import urllib3
 from botocore.exceptions import ClientError
+
+urllib3.disable_warnings()
 
 logfile_timestamp_format = "%Y%m%d%H%M%S"
 log_timestamp_format = "%Y-%m-%d %H:%M:%S"
