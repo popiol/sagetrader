@@ -188,8 +188,8 @@ class CustomAgent:
             sample_weight=np.array(weights),
         )
         filename = self.train_file.format(model_kind=model_kind)
-        print("filename:", filename)
-        print("dir:", os.path.basename(filename))
+        common.log("filename:", filename)
+        common.log("dir:", os.path.basename(filename))
         os.makedirs(os.path.basename(filename), exist_ok=True)
         with open(filename, "a") as f:
             for x1, y1, w1 in zip(x, y, weights):
