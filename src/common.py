@@ -1,19 +1,19 @@
-import boto3
-import sagemaker
-import os
-from botocore.exceptions import ClientError
-import sys
 import csv
+import datetime
+import glob
+import io
 import json
-import random
 import logging
 import logging.config
-import datetime
-import io
-import psutil
-import glob
+import os
+import random
 import re
+import sys
 
+import boto3
+import psutil
+import sagemaker
+from botocore.exceptions import ClientError
 
 logfile_timestamp_format = "%Y%m%d%H%M%S"
 log_timestamp_format = "%Y-%m-%d %H:%M:%S"
@@ -88,7 +88,6 @@ class StreamToLogger(io.IOBase):
         logger.handlers[0].flush()
 
 
-
 sys.stderr = StreamToLogger(logging.ERROR)
 
 
@@ -116,9 +115,7 @@ def s3_upload_file(filename, obj_key=None):
     main_bucket.upload_file(filename, obj_key)
 
 
-def s3_download_file(
-    obj_key, filename=None, if_not_exists=False, fail_on_missing=False
-):
+def s3_download_file(obj_key, filename=None, if_not_exists=False, fail_on_missing=False):
     if filename is None:
         filename = obj_key
     if if_not_exists and os.path.isfile(filename):
@@ -167,7 +164,7 @@ def get_last_timestamp(filename):
         data = list(reader)
     timestamp = int(data[-1]["t"])
     return timestamp
-    
+
 
 def get_first_timestamp(filename):
     with open(filename, "r") as f:
@@ -260,8 +257,8 @@ def find_random_rt_quotes():
     return path
 
 
-def data_files_iter(hist : bool):
-    pattern =  hist_quotes_filename if hist else rt_quotes_filename
+def data_files_iter(hist: bool):
+    pattern = hist_quotes_filename if hist else rt_quotes_filename
     paths = [pattern.split("{")[0]]
     while True:
         if not paths:

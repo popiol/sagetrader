@@ -83,17 +83,17 @@ def main(rebuild, worker_id, n_workers):
             agent_data = pickle.load(f)
         if agent_data["best_score"] > 0:
             dt = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-            agent_file_best2 = agent_file_best.replace(
-                data_dir + "/", best_models_dir + "/"
-            ).replace("best", "best-" + dt)
+            agent_file_best2 = agent_file_best.replace(data_dir + "/", best_models_dir + "/").replace(
+                "best", "best-" + dt
+            )
             shutil.copyfile(agent_file_best, agent_file_best2)
-            hist_model_file_best2 = hist_model_file_best.replace(
-                data_dir + "/", best_models_dir + "/"
-            ).replace("best", "best-" + dt)
+            hist_model_file_best2 = hist_model_file_best.replace(data_dir + "/", best_models_dir + "/").replace(
+                "best", "best-" + dt
+            )
             shutil.copyfile(hist_model_file_best, hist_model_file_best2)
-            rt_model_file_best2 = rt_model_file_best.replace(
-                data_dir + "/", best_models_dir + "/"
-            ).replace("best", "best-" + dt)
+            rt_model_file_best2 = rt_model_file_best.replace(data_dir + "/", best_models_dir + "/").replace(
+                "best", "best-" + dt
+            )
             shutil.copyfile(rt_model_file_best, rt_model_file_best2)
             common.s3_upload_file(agent_file_best2)
             common.s3_upload_file(hist_model_file_best2)
@@ -146,12 +146,8 @@ def main(rebuild, worker_id, n_workers):
             best_score = score
             best_worker = str(worker_i)
     if best_worker is not None:
-        common.log(
-            hist_model_file_worker.replace("*", best_worker), "->", hist_model_file
-        )
-        shutil.copyfile(
-            hist_model_file_worker.replace("*", best_worker), hist_model_file
-        )
+        common.log(hist_model_file_worker.replace("*", best_worker), "->", hist_model_file)
+        shutil.copyfile(hist_model_file_worker.replace("*", best_worker), hist_model_file)
         common.log(rt_model_file_worker.replace("*", best_worker), "->", rt_model_file)
         shutil.copyfile(rt_model_file_worker.replace("*", best_worker), rt_model_file)
         shutil.copyfile(agent_file_worker.replace("*", best_worker), agent_file)

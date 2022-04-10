@@ -1,6 +1,7 @@
 import datetime
 import glob
 import math
+import os
 import pickle
 import random
 import shutil
@@ -46,6 +47,7 @@ class CustomAgent:
         self.confidences = {}
         self.niter = 0
         self.wins = []
+        self.train_file = "trainset/{model_kind}.csv"
 
     def create_hist_model(self):
         inputs = keras.layers.Input(shape=(self.max_quotes, 5))
@@ -175,7 +177,7 @@ class CustomAgent:
             # common.log("rt pred:", confidence, buy_price, sell_price)
         return action
 
-    def fit(self, model, x, y, weights):
+    def fit(self, model, x, y, weights, model_kind):
         if len(x) == 0:
             return
         model.fit(
@@ -185,6 +187,13 @@ class CustomAgent:
             verbose=0,
             sample_weight=np.array(weights),
         )
+        filename = self.train_file.format(model_kind=model_kind)
+        print("filename:", filename)
+        print("dir:", os.path.basename(filename))
+        os.makedirs(os.path.basename(filename), exist_ok=True)
+        with open(filename, "a") as f:
+            for x1, y1, w1 in zip(x, y, weights):
+                f.write(f"{x1}\t{y1}\t{w1}\n")
 
     def transform_x(self, state):
         return state
@@ -342,18 +351,8 @@ class CustomAgent:
                     rt_set["train_y"].append(sell_train_y)
                     rt_set["weights"].append(w)
             for _ in range(nit):
-                self.fit(
-                    self.hist_model,
-                    hist_set["train_x"],
-                    hist_set["train_y"],
-                    hist_set["weights"],
-                )
-                self.fit(
-                    self.rt_model,
-                    rt_set["train_x"],
-                    rt_set["train_y"],
-                    rt_set["weights"],
-                )
+                self.fit(self.hist_model, hist_set["train_x"], hist_set["train_y"], hist_set["weights"], "hist")
+                self.fit(self.rt_model, rt_set["train_x"], rt_set["train_y"], rt_set["weights"], "rt")
             if hist_set["train_x"] and rt_set["train_x"]:
                 self.fitted = True
             self.explore = self.explore * 0.9815
