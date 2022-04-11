@@ -97,13 +97,8 @@ class CustomAgent:
         old_shape = layer.output_shape[1]
         if subject == "lstm":
             pow = lambda x, y: math.copysign(math.pow(x, y), x)
-            shape = max(
-                3,
-                old_shape
-                + pow(
-                    round(random.uniform(-pow(old_shape / 2, 0.5), pow(old_shape / 2, 0.5))),
-                    2,
-                ),
+            shape = int(
+                max(3, old_shape + pow(round(random.uniform(-pow(old_shape / 2, 0.5), pow(old_shape / 2, 0.5))), 2))
             )
         else:
             shape = old_shape
