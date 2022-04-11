@@ -17,3 +17,4 @@ config.sh
 logs/*
 !logs/.placeholder
 models/
+trainset/

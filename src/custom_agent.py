@@ -172,7 +172,7 @@ class CustomAgent:
             # common.log("rt pred:", confidence, buy_price, sell_price)
         return action
 
-    def fit(self, model, x, y, weights, model_kind):
+    def fit(self, model, x, y, weights, model_kind=None):
         if len(x) == 0:
             return
         model.fit(
@@ -182,13 +182,12 @@ class CustomAgent:
             verbose=0,
             sample_weight=np.array(weights),
         )
-        filename = self.train_file.format(model_kind=model_kind)
-        common.log("filename:", filename)
-        common.log("dir:", os.path.dirname(filename))
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
-        with open(filename, "a+") as f:
-            for x1, y1, w1 in zip(x, y, weights):
-                f.write(f"{x1}\t{y1}\t{w1}\n")
+        if model_kind is not None:
+            filename = self.train_file.format(model_kind=model_kind)
+            os.makedirs(os.path.dirname(filename), exist_ok=True)
+            with open(filename, "a+") as f:
+                for x1, y1, w1 in zip(x, y, weights):
+                    f.write(f"{x1}\t{y1}\t{w1}\n")
 
     def transform_x(self, state):
         return state
@@ -356,6 +355,7 @@ class CustomAgent:
         return total
 
     def train(self):
+        self.pretrain()
         self.niter = 0
         self.max_total = None
         for _ in range(1000):
@@ -374,6 +374,31 @@ class CustomAgent:
             "explore:",
             self.explore,
         )
+
+    def pretrain(self):
+        models = {
+            "hist": self.hist_model,
+            "rt": self.rt_model
+        }
+        for model_name in models:
+            model = models[model_name]
+            filename = self.train_file.format(model_kind=model_name)
+            x = []
+            y = []
+            weights = []
+            max_size = 10000
+            with open(filename, "r") as f:
+                for line in f:
+                    if random.random() < .99:
+                        continue
+                    x1, y1, w1 = line.strip().split("\t")
+                    x.append(x1)
+                    y.append(y1)
+                    weights.append(w1)
+                    max_size -= 1
+                    if max_size <= 0:
+                        break
+            self.fit(model, x, y, weights)
 
     def evaluate(self, quick=False, find_best=False):
         if quick:
@@ -461,7 +486,7 @@ class CustomAgent:
 
     def load_checkpoint(self, checkpoint_path: str, load_model=True):
         worker_id = None
-        self.model_dir = "/".join(checkpoint_path.split("/")[:-1])
+        self.model_dir = os.path.dirname(checkpoint_path)
         if "-" in checkpoint_path:
             worker_id = common.model_id_from_filename(checkpoint_path)
             self.worker_id = worker_id
