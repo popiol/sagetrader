@@ -189,8 +189,8 @@ class CustomAgent:
         )
         filename = self.train_file.format(model_kind=model_kind)
         common.log("filename:", filename)
-        common.log("dir:", os.path.basename(filename))
-        os.makedirs(os.path.basename(filename), exist_ok=True)
+        common.log("dir:", os.path.dirname(filename))
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
         with open(filename, "a+") as f:
             for x1, y1, w1 in zip(x, y, weights):
                 f.write(f"{x1}\t{y1}\t{w1}\n")
