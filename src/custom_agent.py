@@ -412,7 +412,7 @@ class CustomAgent:
                     max_size -= 1
                     if max_size <= 0:
                         break
-            common.log("Pretrain, len(x):", len(x))
+            common.log("Pretrain, good:", n_good, "bad:", n_bad)
             self.fit(model, x, y, weights)
 
     def evaluate(self, quick=False, find_best=False):
