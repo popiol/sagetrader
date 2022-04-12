@@ -1,5 +1,6 @@
 import datetime
 import glob
+import json
 import math
 import os
 import pickle
@@ -392,6 +393,9 @@ class CustomAgent:
                     if random.random() < .99:
                         continue
                     x1, y1, w1 = line.strip().split("\t")
+                    x1 = json.loads(x1)
+                    y1 = json.loads(y1)
+                    w1 = json.loads(w1)
                     x.append(x1)
                     y.append(y1)
                     weights.append(w1)
