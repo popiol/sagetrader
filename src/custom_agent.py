@@ -389,6 +389,8 @@ class CustomAgent:
             y = []
             weights = []
             max_size = 10000
+            n_good = 0
+            n_bad = 0
             with open(filename, "r") as f:
                 for line in f:
                     if random.random() < th:
@@ -397,6 +399,13 @@ class CustomAgent:
                     x1 = json.loads(x1)
                     y1 = json.loads(y1)
                     w1 = json.loads(w1)
+                    val = y1[0] if type(y1) == list else y1
+                    if val < .5 and n_good < n_bad:
+                        continue
+                    if val < .5:
+                        n_bad += 1
+                    else:
+                        n_good += 1
                     x.append(x1)
                     y.append(y1)
                     weights.append(w1)
