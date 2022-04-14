@@ -381,6 +381,7 @@ class CustomAgent:
             "hist": self.hist_model,
             "rt": self.rt_model
         }
+        th = random.uniform(0, 2)
         for model_name in models:
             model = models[model_name]
             filename = self.train_file.format(model_kind=model_name)
@@ -392,7 +393,7 @@ class CustomAgent:
             n_bad = 0
             with open(filename, "r") as f:
                 for line in f:
-                    if random.random() < .99:
+                    if random.random() < th:
                         continue
                     x1, y1, w1 = line.strip().split("\t")
                     x1 = json.loads(x1)
