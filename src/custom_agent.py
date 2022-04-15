@@ -381,7 +381,7 @@ class CustomAgent:
             "hist": self.hist_model,
             "rt": self.rt_model
         }
-        th = random.uniform(0, 2)
+        th = random.uniform(.5, 1.5)
         common.log("th:", th)
         for model_name in models:
             model = models[model_name]
