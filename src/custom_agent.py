@@ -382,6 +382,7 @@ class CustomAgent:
             "rt": self.rt_model
         }
         th = random.uniform(0, 2)
+        common.log("th:", th)
         for model_name in models:
             model = models[model_name]
             filename = self.train_file.format(model_kind=model_name)
